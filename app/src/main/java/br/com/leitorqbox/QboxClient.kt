@@ -6,7 +6,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Cliente da API de controle de acesso do Q-Box (/api/access/*).
+ * Cliente da API de controle de acesso do Q-Box (endpoints em /api/access).
  * Todas as chamadas são bloqueantes: chamar fora da main thread.
  */
 object QboxClient {
