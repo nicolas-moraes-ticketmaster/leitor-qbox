@@ -53,7 +53,8 @@ class Prefs(context: Context) {
         showId = showId.trim(),
         token = token.trim(),
         gate = gate.trim(),
-        sectorIds = sectorIds,
+        // Nenhum marcado = todos os setores conhecidos do show.
+        sectorIds = sectorIds.ifEmpty { sectorList.map { it.id } },
         checkOnly = checkOnly,
     )
 

@@ -58,7 +58,10 @@ object QboxClient {
         val (code, body) = request(cfg, "GET", "/api/access/sectors", null)
         when {
             code == 200 -> {
-                val arr = JSONArray(body)
+                // Versões do Q-Box respondem [{...}] (PDF) ou {"sectors":[{...}]} (/public).
+                val trimmed = body.trim()
+                val arr = if (trimmed.startsWith("[")) JSONArray(trimmed)
+                else JSONObject(trimmed).optJSONArray("sectors") ?: JSONArray()
                 return (0 until arr.length()).map {
                     val o = arr.getJSONObject(it)
                     Sector(o.getInt("id"), o.optString("name"))
@@ -70,18 +73,13 @@ object QboxClient {
     }
 
     fun scan(cfg: Config, code: String): ScanResult {
-        // Sem setores selecionados usamos as variantes *All, que aceitam qualquer setor do show.
-        val allSectors = cfg.sectorIds.isEmpty()
-        val path = when {
-            cfg.checkOnly && allSectors -> "/api/access/checkAll"
-            cfg.checkOnly -> "/api/access/check"
-            allSectors -> "/api/access/validateAll"
-            else -> "/api/access/validate"
-        }
+        // Só /validate e /check: as variantes *All não existem em todas as versões do Q-Box.
+        // "Todos os setores" é resolvido em Prefs.config() mandando todos os IDs do show.
+        val path = if (cfg.checkOnly) "/api/access/check" else "/api/access/validate"
         val body = JSONObject()
             .put("code", code)
             .put("gate", cfg.gate)
-        if (!allSectors) body.put("sectors", JSONArray(cfg.sectorIds))
+        if (cfg.sectorIds.isNotEmpty()) body.put("sectors", JSONArray(cfg.sectorIds))
 
         val (http, text) = try {
             request(cfg, "POST", path, body.toString())
@@ -90,6 +88,8 @@ object QboxClient {
         }
 
         val json = runCatching { JSONObject(text) }.getOrNull()
+        // 404 em HTML = rota inexistente nesta versão do Q-Box (ex. /check), não ticket.
+        if (http == 404 && json == null) return ScanResult.ServerError(404)
         return when {
             http == 200 && json != null && json.optBoolean("valid", true) ->
                 ScanResult.Valid(json.optBoolean("master", false), ticketInfo(json))

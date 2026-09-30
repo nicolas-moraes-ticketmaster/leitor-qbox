@@ -19,6 +19,14 @@
             android:textStyle="bold" />
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Dica: leia o QR de pareamento do show (QTR__...) com o gatilho para preencher Show ID e Token."
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
             style="@style/SettingsLabel"
             android:text="Endereço do Q-Box (IP da VM, porta 8080 é o padrão)" />
 
@@ -45,7 +53,8 @@
         <EditText
             android:id="@+id/etToken"
             style="@style/SettingsField"
-            android:inputType="textPassword" />
+            android:fontFamily="monospace"
+            android:inputType="textVisiblePassword|textCapCharacters|textNoSuggestions" />
 
         <TextView
             style="@style/SettingsLabel"

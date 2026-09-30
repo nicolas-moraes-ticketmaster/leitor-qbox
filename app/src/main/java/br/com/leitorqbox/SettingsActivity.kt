@@ -1,5 +1,9 @@
 package br.com.leitorqbox
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.widget.Button
 import android.widget.CheckBox
@@ -28,6 +32,36 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var sectorsBox: LinearLayout
 
     private var sectors: List<QboxClient.Sector> = emptyList()
+
+    // Lendo o QR de pareamento da Crowder (QTR__<id>__<token>) preenche Show ID e Token.
+    private val scanReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val data = intent.getStringExtra(DataWedge.EXTRA_DATA)?.trim() ?: return
+            val parts = data.split("__")
+            if (parts.size == 3 && parts[0] == "QTR") {
+                etShowId.setText(parts[1])
+                etToken.setText(parts[2])
+                showTestResult(null, "Show ${parts[1]} lido do QR. Toque em Testar conexão.")
+            } else {
+                showTestResult(false, "QR não é de pareamento (esperado QTR__id__token)")
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        ContextCompat.registerReceiver(
+            this,
+            scanReceiver,
+            IntentFilter(DataWedge.SCAN_ACTION).apply { addCategory(Intent.CATEGORY_DEFAULT) },
+            ContextCompat.RECEIVER_EXPORTED,
+        )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(scanReceiver)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -135,7 +169,12 @@ class SettingsActivity : AppCompatActivity() {
         prefs.checkOnly = swCheckOnly.isChecked
         prefs.sectorList = sectors
         prefs.sectorIdsRaw = checkedSectorIds().joinToString(",")
-        Toast.makeText(this, "Configuração salva", Toast.LENGTH_SHORT).show()
+        val msg = if (sectors.isEmpty()) {
+            "Salvo, mas sem setores carregados: toque em Testar conexão"
+        } else {
+            "Configuração salva"
+        }
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
         finish()
     }
 }

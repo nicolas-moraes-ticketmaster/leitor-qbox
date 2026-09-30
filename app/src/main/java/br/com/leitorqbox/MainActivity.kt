@@ -176,7 +176,11 @@ class MainActivity : AppCompatActivity() {
                 addHistory("! AUTENTICAÇÃO", null)
             }
             is ScanResult.ServerError -> {
-                showPanel(R.color.warning, "ERRO NO Q-BOX", "HTTP ${result.httpCode}", "Tente ler novamente em alguns segundos")
+                if (result.httpCode == 404) {
+                    showPanel(R.color.warning, "NÃO SUPORTADO", "Este Q-Box não tem essa função", if (checkOnly) "Desligue o modo consulta nas configurações" else "Verifique a versão do Q-Box")
+                } else {
+                    showPanel(R.color.warning, "ERRO NO Q-BOX", "HTTP ${result.httpCode}", "Tente ler novamente em alguns segundos")
+                }
                 feedback(ok = false)
                 addHistory("! ERRO ${result.httpCode}", null)
             }
