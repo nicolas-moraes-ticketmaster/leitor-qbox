@@ -50,8 +50,8 @@ class Prefs(context: Context) {
 
     fun config() = QboxClient.Config(
         baseUrl = normalizeBaseUrl(host),
-        showId = showId.trim(),
-        token = token.trim(),
+        showId = cleanShowId(showId),
+        token = cleanToken(token),
         gate = gate.trim(),
         // Nenhum marcado = todos os setores conhecidos do show.
         sectorIds = sectorIds.ifEmpty { sectorList.map { it.id } },
@@ -66,6 +66,10 @@ class Prefs(context: Context) {
     }
 
     companion object {
+        // Remove espaços, quebras e caracteres invisíveis que vêm junto ao colar.
+        fun cleanShowId(raw: String) = raw.filter { it.isLetterOrDigit() || it == '-' }
+        fun cleanToken(raw: String) = raw.filter { it.isLetterOrDigit() }
+
         /** "192.168.0.50" -> "http://192.168.0.50:8080" (porta padrão do Q-Box). */
         fun normalizeBaseUrl(raw: String): String {
             var s = raw.trim().trimEnd('/')

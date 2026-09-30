@@ -67,8 +67,8 @@ object QboxClient {
                     Sector(o.getInt("id"), o.optString("name"))
                 }
             }
-            code == 401 -> throw QboxException("Show ID ou Token inválidos (401)")
-            else -> throw QboxException("Q-Box respondeu HTTP $code")
+            code == 401 -> throw QboxException("Show ID ou Token recusados (401)\n" + diagnostics(cfg, body))
+            else -> throw QboxException("Q-Box respondeu HTTP $code\n" + diagnostics(cfg, body))
         }
     }
 
@@ -110,6 +110,14 @@ object QboxClient {
             }
             else -> ScanResult.ServerError(http)
         }
+    }
+
+    /** O que foi realmente enviado, para comparar com o painel sem expor o token inteiro. */
+    private fun diagnostics(cfg: Config, body: String) = buildString {
+        append("URL: ${cfg.baseUrl}/api/access/sectors\n")
+        append("Show ID: '${cfg.showId}' (${cfg.showId.length} caract.)\n")
+        append("Token: ${cfg.token.length} caract., início ${cfg.token.take(4)}… fim …${cfg.token.takeLast(4)}\n")
+        append("Resposta: ${body.trim().take(120).ifEmpty { "(vazia)" }}")
     }
 
     private fun ticketInfo(json: JSONObject): TicketInfo {

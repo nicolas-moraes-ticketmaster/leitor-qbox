@@ -77,6 +77,9 @@ class SettingsActivity : AppCompatActivity() {
         tvTestResult = findViewById(R.id.tvTestResult)
         sectorsBox = findViewById(R.id.sectorsBox)
 
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull()
+        findViewById<TextView>(R.id.tvTitle).text = "Configurações · v$version"
+
         etHost.setText(prefs.host)
         etShowId.setText(prefs.showId)
         etToken.setText(prefs.token)
@@ -93,8 +96,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun formConfig() = QboxClient.Config(
         baseUrl = Prefs.normalizeBaseUrl(etHost.text.toString()),
-        showId = etShowId.text.toString().trim(),
-        token = etToken.text.toString().trim(),
+        showId = Prefs.cleanShowId(etShowId.text.toString()),
+        token = Prefs.cleanToken(etToken.text.toString()),
         gate = etGate.text.toString().trim(),
         sectorIds = emptyList(),
         checkOnly = true,
