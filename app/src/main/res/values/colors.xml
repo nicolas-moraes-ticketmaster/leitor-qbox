@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#121417</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#9AA7B0</color>
+
+    <color name="idle">#37474F</color>
+    <color name="processing">#546E7A</color>
+    <color name="valid">#2E7D32</color>
+    <color name="master">#1565C0</color>
+    <color name="denied">#C62828</color>
+    <color name="warning">#E65100</color>
+</resources>
