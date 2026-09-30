@@ -45,6 +45,22 @@ class Prefs(context: Context) {
             sectorListRaw = arr.toString()
         }
 
+    /** Na primeira abertura desta versão, grava o show de teste (sobrescreve o que estava salvo). */
+    fun applyTestDefaultsOnce() {
+        if (sp.getBoolean(TEST_DEFAULTS_KEY, false)) return
+        applyTestDefaults()
+        sp.edit().putBoolean(TEST_DEFAULTS_KEY, true).apply()
+    }
+
+    fun applyTestDefaults() {
+        host = TEST_HOST
+        showId = TEST_SHOW_ID
+        token = TEST_TOKEN
+        sectorList = TEST_SECTORS
+        sectorIdsRaw = ""
+        checkOnly = false
+    }
+
     fun isConfigured() =
         host.isNotBlank() && showId.isNotBlank() && token.isNotBlank() && gate.isNotBlank()
 
@@ -66,6 +82,19 @@ class Prefs(context: Context) {
     }
 
     companion object {
+        // TESTE: show "Evento Teste TI - OFICIAL - DAY 1". Remover antes de usar em evento real.
+        const val TEST_HOST = "192.168.22.231"
+        const val TEST_SHOW_ID = "25860"
+        const val TEST_TOKEN = "W99WFZHCPSJ1FJZNMMUFC2QB9W3YN2L2NLYV"
+        val TEST_SECTORS = listOf(
+            QboxClient.Sector(35865665, "Facial"),
+            QboxClient.Sector(204618, "VIP RFID"),
+            QboxClient.Sector(198649, "Cadeira Inferior"),
+            QboxClient.Sector(198646, "GA"),
+            QboxClient.Sector(198645, "Pista Premium"),
+        )
+        private const val TEST_DEFAULTS_KEY = "test_defaults_v1"
+
         // Remove espaços, quebras e caracteres invisíveis que vêm junto ao colar.
         fun cleanShowId(raw: String) = raw.filter { it.isLetterOrDigit() || it == '-' }
         fun cleanToken(raw: String) = raw.filter { it.isLetterOrDigit() }

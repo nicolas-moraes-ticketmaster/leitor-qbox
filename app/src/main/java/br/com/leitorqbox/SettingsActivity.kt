@@ -91,6 +91,15 @@ class SettingsActivity : AppCompatActivity() {
         renderSectors(prefs.sectorIds.toSet())
 
         findViewById<Button>(R.id.btnTest).setOnClickListener { testConnection() }
+        findViewById<Button>(R.id.btnTestDefaults).setOnClickListener {
+            etHost.setText(Prefs.TEST_HOST)
+            etShowId.setText(Prefs.TEST_SHOW_ID)
+            etToken.setText(Prefs.TEST_TOKEN)
+            swCheckOnly.isChecked = false
+            sectors = Prefs.TEST_SECTORS
+            renderSectors(emptySet())
+            showTestResult(null, "Dados de teste preenchidos. Toque em Testar conexão.")
+        }
         findViewById<Button>(R.id.btnSave).setOnClickListener { save() }
     }
 

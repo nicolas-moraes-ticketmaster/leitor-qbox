@@ -68,6 +68,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         prefs = Prefs(this)
+        prefs.applyTestDefaultsOnce()
 
         tvHeader = findViewById(R.id.tvHeader)
         tvSubHeader = findViewById(R.id.tvSubHeader)
@@ -171,7 +172,11 @@ class MainActivity : AppCompatActivity() {
                 addHistory("✗ $title", result.info.holder)
             }
             ScanResult.AuthError -> {
-                showPanel(R.color.warning, "ERRO DE CONFIGURAÇÃO", "Show ID ou Token recusados pelo Q-Box", "Confira em Configurações")
+                val cfg = prefs.config()
+                showPanel(
+                    R.color.warning, "ERRO DE CONFIGURAÇÃO", "Show ID ou Token recusados pelo Q-Box",
+                    "${cfg.baseUrl}\nShow '${cfg.showId}' · token ${cfg.token.length} caract. …${cfg.token.takeLast(4)}",
+                )
                 feedback(ok = false)
                 addHistory("! AUTENTICAÇÃO", null)
             }

@@ -27,6 +27,14 @@
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
+        <Button
+            android:id="@+id/btnTestDefaults"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Preencher dados de teste (show 25860)" />
+
         <TextView
             style="@style/SettingsLabel"
             android:text="Endereço do Q-Box (IP da VM, porta 8080 é o padrão)" />
