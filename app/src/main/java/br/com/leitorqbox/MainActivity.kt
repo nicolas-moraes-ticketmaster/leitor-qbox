@@ -403,12 +403,22 @@ class MainActivity : AppCompatActivity() {
                 if (on) draft.clear() else event.sectors.firstOrNull()?.let { draft.add(it.id) }
                 refresh()
             }
+            // draft vazio = "todos os setores": todas as caixas aparecem marcadas.
+            val allIds = event.sectors.map { it.id }
             boxes.forEachIndexed { i, cb ->
+                val id = event.sectors[i].id
                 cb.setOnCheckedChangeListener(null)
-                cb.isChecked = event.sectors[i].id in draft
+                cb.isChecked = draft.isEmpty() || id in draft
                 cb.setOnCheckedChangeListener { _, on ->
-                    val id = event.sectors[i].id
+                    if (draft.isEmpty()) draft.addAll(allIds) // saindo do modo "todos"
                     if (on) draft.add(id) else draft.remove(id)
+                    when {
+                        draft.isEmpty() -> {
+                            draft.add(id)
+                            Toast.makeText(this, "Selecione ao menos um setor ou ative Aceitar todos", Toast.LENGTH_SHORT).show()
+                        }
+                        draft.size == allIds.size -> draft.clear() // marcou todos = "todos"
+                    }
                     refresh()
                 }
             }
