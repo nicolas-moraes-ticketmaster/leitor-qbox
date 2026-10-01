@@ -3,6 +3,7 @@
     <color name="background">#121417</color>
     <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#9AA7B0</color>
+    <color name="card">#1E2328</color>
 
     <color name="idle">#37474F</color>
     <color name="processing">#546E7A</color>

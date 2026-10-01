@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_primary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnCamera"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="12dp"
+            android:text="📷  Ler QR do evento com a câmera"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Também dá para ler com o gatilho do scanner. O app separa Show ID e Token sozinho (QTR__id__token, id;token, JSON ou link)."
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <TextView
+            style="@style/SettingsLabel"
+            android:text="Nome do evento (só para identificar no leitor)" />
+
+        <EditText
+            android:id="@+id/etName"
+            style="@style/SettingsField"
+            android:hint="Oktoberfest 2026"
+            android:inputType="textCapSentences" />
+
+        <TextView
+            style="@style/SettingsLabel"
+            android:text="IP do Q-Box (porta 8080 é o padrão)" />
+
+        <EditText
+            android:id="@+id/etHost"
+            style="@style/SettingsField"
+            android:hint="192.168.22.231"
+            android:inputType="textUri" />
+
+        <TextView
+            style="@style/SettingsLabel"
+            android:text="Show ID (real: 25860 · virtual: V-...)" />
+
+        <EditText
+            android:id="@+id/etShowId"
+            style="@style/SettingsField"
+            android:fontFamily="monospace"
+            android:inputType="textVisiblePassword|textNoSuggestions" />
+
+        <TextView
+            style="@style/SettingsLabel"
+            android:text="Token do show" />
+
+        <EditText
+            android:id="@+id/etToken"
+            style="@style/SettingsField"
+            android:fontFamily="monospace"
+            android:inputType="textVisiblePassword|textNoSuggestions" />
+
+        <Button
+            android:id="@+id/btnTest"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Testar conexão e carregar setores" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvSectors"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="20dp"
+            android:text="Salvar e usar este evento" />
+    </LinearLayout>
+</ScrollView>

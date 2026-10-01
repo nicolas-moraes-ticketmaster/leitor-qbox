@@ -19,86 +19,23 @@
             android:textSize="22sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Dica: leia o QR de pareamento do show (QTR__...) com o gatilho para preencher Show ID e Token."
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
-
         <Button
-            android:id="@+id/btnTestDefaults"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:id="@+id/btnEvents"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Preencher dados de teste (show 25860)" />
+            android:layout_marginTop="12dp"
+            android:text="Eventos cadastrados (Q-Box, Show ID, Token)" />
 
         <TextView
             style="@style/SettingsLabel"
-            android:text="Endereço do Q-Box (IP da VM, porta 8080 é o padrão)" />
-
-        <EditText
-            android:id="@+id/etHost"
-            style="@style/SettingsField"
-            android:hint="192.168.0.50 ou qbox.local"
-            android:inputType="textUri" />
-
-        <TextView
-            style="@style/SettingsLabel"
-            android:text="Show ID" />
-
-        <EditText
-            android:id="@+id/etShowId"
-            style="@style/SettingsField"
-            android:hint="746 ou V-FESTIVAL26"
-            android:inputType="text|textNoSuggestions" />
-
-        <TextView
-            style="@style/SettingsLabel"
-            android:text="Token do show" />
-
-        <EditText
-            android:id="@+id/etToken"
-            style="@style/SettingsField"
-            android:fontFamily="monospace"
-            android:inputType="textVisiblePassword|textNoSuggestions" />
-
-        <TextView
-            style="@style/SettingsLabel"
-            android:text="Nome deste leitor / portão (aparece no log do Q-Box)" />
+            android:text="Nome deste leitor / portão (vai no campo gate e aparece no log do Q-Box)" />
 
         <EditText
             android:id="@+id/etGate"
             style="@style/SettingsField"
-            android:hint="Portão Norte - TC22 01"
+            android:hint="Catraca Norte 1"
             android:inputType="textCapWords" />
-
-        <Button
-            android:id="@+id/btnTest"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Testar conexão e carregar setores" />
-
-        <TextView
-            android:id="@+id/tvTestResult"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp" />
-
-        <TextView
-            style="@style/SettingsLabel"
-            android:text="Setores aceitos neste leitor (nenhum marcado = aceita todos)" />
-
-        <LinearLayout
-            android:id="@+id/sectorsBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/swCheckOnly"
@@ -110,7 +47,7 @@
 
         <TextView
             style="@style/SettingsLabel"
-            android:text="PIN para abrir as configurações (opcional)" />
+            android:text="PIN do supervisor (opcional): protege eventos, setores e configurações" />
 
         <EditText
             android:id="@+id/etPin"

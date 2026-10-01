@@ -50,4 +50,6 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    // Câmera: leitura do QR do evento e geração do QR para compartilhar.
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 }
