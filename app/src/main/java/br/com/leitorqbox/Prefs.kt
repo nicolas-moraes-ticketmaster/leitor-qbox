@@ -55,9 +55,14 @@ class Prefs(context: Context) {
 
     /**
      * Uma vez por instalação: converte a configuração única das versões antigas em evento
-     * e cadastra os eventos de teste.
+     * e remove os eventos de teste que versões anteriores cadastravam sozinhas.
      */
     fun seedOnce() {
+        if (!sp.getBoolean(PRESET_CLEANUP_KEY, false)) {
+            events = events.filterNot { it.name in OLD_PRESET_NAMES }
+            if (events.none { it.id == activeEventId }) activeEventId = events.firstOrNull()?.id.orEmpty()
+            sp.edit().putBoolean(PRESET_CLEANUP_KEY, true).apply()
+        }
         if (sp.getBoolean(SEED_KEY, false)) return
         val list = events.toMutableList()
 
@@ -82,8 +87,6 @@ class Prefs(context: Context) {
                 )
             )
         }
-        TEST_EVENTS.forEach { t -> if (list.none { it.showId == t.showId }) list.add(t) }
-
         events = list
         if (list.none { it.id == activeEventId }) activeEventId = list.firstOrNull()?.id.orEmpty()
         sp.edit().putBoolean(SEED_KEY, true).apply()
@@ -99,28 +102,9 @@ class Prefs(context: Context) {
     companion object {
         private const val SEED_KEY = "seed_events_v1"
 
-        // TESTE: eventos pré-cadastrados. Remover antes de usar em evento real.
-        private val TEST_EVENTS = listOf(
-            Event(
-                name = "Evento Teste TI - DAY 1",
-                host = "192.168.22.231",
-                showId = "25860",
-                token = "W99WFZHCPSJ1FJZNMMUFC2QB9W3YN2L2NLYV",
-                sectors = listOf(
-                    QboxClient.Sector(35865665, "Facial"),
-                    QboxClient.Sector(204618, "VIP RFID"),
-                    QboxClient.Sector(198649, "Cadeira Inferior"),
-                    QboxClient.Sector(198646, "GA"),
-                    QboxClient.Sector(198645, "Pista Premium"),
-                ),
-            ),
-            Event(
-                name = "Oktoberfest 2026 (virtual)",
-                host = "192.168.22.231",
-                showId = "V-OKT2026",
-                token = "OKT2026VIRTUALKEY9X7B2M4Q1WPRSF6ZT8L",
-            ),
-        )
+        // Eventos que as versões 1.0.7 a 1.0.11 cadastravam sozinhas; são removidos uma vez.
+        private val OLD_PRESET_NAMES = setOf("Evento Teste TI - DAY 1", "Oktoberfest 2026 (virtual)", "Show 25860")
+        private const val PRESET_CLEANUP_KEY = "presets_removed_v1"
 
         // Remove só espaços, quebras e caracteres invisíveis que vêm junto ao colar.
         // Não mexe no resto: shows virtuais (V-...) têm token próprio, com qualquer caractere e caixa.

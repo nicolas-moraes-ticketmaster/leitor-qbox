@@ -61,6 +61,8 @@ class MainActivity : AppCompatActivity() {
         MASTER(R.color.master, R.color.master_sub, android.R.color.white, R.drawable.ic_star),
         DENIED(R.color.denied, R.color.denied_sub, android.R.color.white, R.drawable.ic_error),
         BLOCKED(R.color.denied, R.color.denied_sub, android.R.color.white, R.drawable.ic_blocked),
+        USED(R.color.used, R.color.used_sub, android.R.color.white, R.drawable.ic_error),
+        VOIDED(R.color.voided, R.color.voided_sub, android.R.color.white, R.drawable.ic_blocked),
         ERROR(R.color.warning, R.color.warning_sub, R.color.on_warning, R.drawable.ic_warning),
     }
 
@@ -530,7 +532,7 @@ class MainActivity : AppCompatActivity() {
         val holder = info.holder.orEmpty()
         val basicRows = listOfNotNull(info.sector?.let { "Setor" to it }, info.document?.let { "Documento" to it })
         return when (r.reason) {
-            "USED" -> Kind.DENIED to panel(Kind.DENIED, "Entrada negada", "Já utilizado", holder,
+            "USED" -> Kind.USED to panel(Kind.USED, "Entrada negada", "Já utilizado", holder,
                 rows = listOfNotNull(
                     r.usedDate?.let { "Usado às" to it },
                     r.usedGate?.let { "Portão" to it },
@@ -548,11 +550,12 @@ class MainActivity : AppCompatActivity() {
                     ),
                     code = code)
             }
+            "VOID" -> Kind.VOIDED to panel(Kind.VOIDED, "Entrada negada", "Ingresso cancelado", holder,
+                rows = basicRows, note = "Ingresso cancelado ou estornado.", code = code)
             "SHOW_NOT_OPEN" -> Kind.ERROR to panel(Kind.ERROR, "Validação fechada", "Show não aberto", holder,
                 rows = basicRows, note = "Validação pausada ou fora do horário.", code = code)
             else -> {
                 val (title, note) = when (r.reason) {
-                    "VOID" -> "Ingresso anulado" to "Ingresso cancelado ou estornado."
                     "INVALID_QUENTRO_CODE" -> "Código inválido" to "Assinatura inválida: possível falsificação ou leitura ruim."
                     "INVALID_ACL" -> "Código bloqueado" to "Está em lista negra do show."
                     "DENIED" -> "Acesso negado" to "Negado pelas regras do show."
@@ -757,7 +760,7 @@ class MainActivity : AppCompatActivity() {
         val (toneType, toneMs, pattern) = when (kind) {
             Kind.VALID -> Triple(ToneGenerator.TONE_PROP_ACK, 200, longArrayOf(0, 70))
             Kind.MASTER -> Triple(ToneGenerator.TONE_PROP_BEEP2, 300, longArrayOf(0, 60, 80, 60))
-            Kind.DENIED, Kind.BLOCKED -> Triple(ToneGenerator.TONE_SUP_ERROR, 700, longArrayOf(0, 250, 120, 250, 120, 250))
+            Kind.DENIED, Kind.BLOCKED, Kind.USED, Kind.VOIDED -> Triple(ToneGenerator.TONE_SUP_ERROR, 700, longArrayOf(0, 250, 120, 250, 120, 250))
             Kind.ERROR -> Triple(ToneGenerator.TONE_SUP_CONGESTION, 900, longArrayOf(0, 600))
         }
         tone?.startTone(toneType, toneMs)

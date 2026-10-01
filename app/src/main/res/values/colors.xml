@@ -19,12 +19,18 @@
     <!-- Status do resultado: fundo / sub-superfície / texto -->
     <color name="idle">#1E1E1E</color>
     <color name="idle_sub">#121212</color>
-    <color name="processing">#024DDF</color>
-    <color name="processing_sub">#023AA7</color>
+    <!-- Validando: neutro, para o azul ficar exclusivo de "cancelado". -->
+    <color name="processing">#2A2A2A</color>
+    <color name="processing_sub">#1E1E1E</color>
     <color name="valid">#048851</color>          <!-- earth -->
     <color name="valid_sub">#03663D</color>
-    <color name="master">#A733FF</color>         <!-- callisto -->
-    <color name="master_sub">#7D26BF</color>
+    <!-- Mestre em teal: roxo agora é "já utilizado" (barrar), não pode parecer com mestre (entrar). -->
+    <color name="master">#00838F</color>
+    <color name="master_sub">#006169</color>
+    <color name="used">#A733FF</color>           <!-- callisto: já utilizado -->
+    <color name="used_sub">#7D26BF</color>
+    <color name="voided">#024DDF</color>         <!-- neptune: ingresso cancelado -->
+    <color name="voided_sub">#023AA7</color>
     <color name="denied">#EB0000</color>         <!-- mars -->
     <color name="denied_sub">#B00000</color>
     <color name="warning">#FFB932</color>        <!-- jupiter: texto escuro -->
