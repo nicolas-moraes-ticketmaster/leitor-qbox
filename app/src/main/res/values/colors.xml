@@ -4,6 +4,7 @@
     <color name="brand">#024DDF</color>          <!-- neptune -->
     <color name="brand_dark">#023AA7</color>     <!-- neptune dark (hover/press) -->
     <color name="brand_darker">#012E86</color>   <!-- status bar -->
+    <color name="tm_logo_blue">#1348E3</color>   <!-- fundo do logo "t" (ícone e splash) -->
 
     <!-- Superfícies (TM Dark) -->
     <color name="background">#121212</color>     <!-- cosmos -->

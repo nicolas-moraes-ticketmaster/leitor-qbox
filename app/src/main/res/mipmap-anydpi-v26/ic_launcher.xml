@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Ícone: logo "t" da Ticketmaster (arquivo fornecido pela equipe), fundo no mesmo azul do logo. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/brand" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
-    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+    <background android:drawable="@color/tm_logo_blue" />
+    <foreground android:drawable="@drawable/ic_tm_logo" />
 </adaptive-icon>
