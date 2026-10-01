@@ -27,7 +27,11 @@ object DataWedge {
         val barcode = plugin("BARCODE") {
             putString("scanner_selection", "auto")
             putString("scanner_input_enabled", "true")
-            putString("decoder_qrcode", "true")
+            // Ingressos chegam em QR (app), PDF417/Code128 (PDF/impresso) e outros formatos.
+            listOf(
+                "decoder_qrcode", "decoder_pdf417", "decoder_code128", "decoder_datamatrix",
+                "decoder_aztec", "decoder_code39", "decoder_ean13", "decoder_i2of5",
+            ).forEach { putString(it, "true") }
         }
         val intentOutput = plugin("INTENT") {
             putString("intent_output_enabled", "true")
@@ -39,15 +43,18 @@ object DataWedge {
             putString("keystroke_output_enabled", "false")
         }
 
-        val profile = Bundle().apply {
-            putString("PROFILE_NAME", PROFILE_NAME)
-            putString("PROFILE_ENABLED", "true")
-            putString("CONFIG_MODE", "CREATE_IF_NOT_EXIST")
-            putParcelableArray("APP_LIST", arrayOf(appConfig))
-            putParcelableArrayList("PLUGIN_CONFIG", arrayListOf(barcode, intentOutput, keystroke))
+        // CREATE_IF_NOT_EXIST cria o profile na primeira vez; UPDATE aplica a config
+        // nova num profile que já existia (de versões anteriores do app).
+        listOf("CREATE_IF_NOT_EXIST", "UPDATE").forEach { mode ->
+            val profile = Bundle().apply {
+                putString("PROFILE_NAME", PROFILE_NAME)
+                putString("PROFILE_ENABLED", "true")
+                putString("CONFIG_MODE", mode)
+                putParcelableArray("APP_LIST", arrayOf(appConfig))
+                putParcelableArrayList("PLUGIN_CONFIG", arrayListOf(barcode, intentOutput, keystroke))
+            }
+            send(context, "com.symbol.datawedge.api.SET_CONFIG", profile)
         }
-
-        send(context, "com.symbol.datawedge.api.SET_CONFIG", profile)
     }
 
     /** Aciona o scanner pelo botão da tela (equivalente ao gatilho físico). */
