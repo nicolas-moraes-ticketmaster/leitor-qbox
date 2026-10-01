@@ -28,15 +28,21 @@
     <!-- Mestre em teal: roxo agora é "já utilizado" (barrar), não pode parecer com mestre (entrar). -->
     <color name="master">#00838F</color>
     <color name="master_sub">#006169</color>
-    <color name="used">#A733FF</color>           <!-- callisto: já utilizado -->
-    <color name="used_sub">#7D26BF</color>
+    <color name="used">#F26B1D</color>           <!-- já utilizado: laranja -->
+    <color name="used_sub">#B84F14</color>
+    <color name="sector">#FFD60A</color>         <!-- setor incorreto: amarelo (texto escuro) -->
+    <color name="sector_sub">#C7A600</color>
+    <color name="on_sector">#121212</color>
+    <color name="expired">#A733FF</color>        <!-- expirado / QR inválido: roxo -->
+    <color name="expired_sub">#7D26BF</color>
     <color name="voided">#024DDF</color>         <!-- neptune: ingresso cancelado -->
     <color name="voided_sub">#023AA7</color>
     <color name="denied">#EB0000</color>         <!-- mars -->
     <color name="denied_sub">#B00000</color>
-    <color name="warning">#FFB932</color>        <!-- jupiter: texto escuro -->
-    <color name="warning_sub">#BF8B26</color>
-    <color name="on_warning">#121212</color>
+    <!-- Erros de sistema (sem conexão, configuração): cinza, para não confundir com o amarelo de setor. -->
+    <color name="warning">#5C6670</color>
+    <color name="warning_sub">#454D55</color>
+    <color name="on_warning">#FFFFFF</color>
 
     <color name="overlay">#BF000000</color>      <!-- rgba(0,0,0,.75) -->
 </resources>

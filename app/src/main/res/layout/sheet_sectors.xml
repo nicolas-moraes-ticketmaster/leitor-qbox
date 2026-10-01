@@ -119,7 +119,7 @@
             android:layout_height="wrap_content"
             android:drawablePadding="8dp"
             android:gravity="center_vertical"
-            android:text="Alterações pedem o PIN do supervisor."
+            android:text="Protegido pelo PIN do administrador."
             android:textColor="@color/text_secondary" />
 
         <com.google.android.material.button.MaterialButton

@@ -65,7 +65,8 @@ class MainActivity : AppCompatActivity() {
         VALID(R.color.valid, R.color.valid_sub, android.R.color.white, R.drawable.ic_success),
         MASTER(R.color.master, R.color.master_sub, android.R.color.white, R.drawable.ic_star),
         DENIED(R.color.denied, R.color.denied_sub, android.R.color.white, R.drawable.ic_error),
-        BLOCKED(R.color.denied, R.color.denied_sub, android.R.color.white, R.drawable.ic_blocked),
+        BLOCKED(R.color.sector, R.color.sector_sub, R.color.on_sector, R.drawable.ic_blocked),
+        EXPIRED(R.color.expired, R.color.expired_sub, android.R.color.white, R.drawable.ic_warning),
         USED(R.color.used, R.color.used_sub, android.R.color.white, R.drawable.ic_error),
         VOIDED(R.color.voided, R.color.voided_sub, android.R.color.white, R.drawable.ic_blocked),
         ERROR(R.color.warning, R.color.warning_sub, R.color.on_warning, R.drawable.ic_warning),
@@ -139,7 +140,7 @@ class MainActivity : AppCompatActivity() {
     private val readTimes = ArrayDeque<Long>()
     // Evento (e conexão) já sincronizado; muda ao trocar de evento ou editar IP/ID/Token.
     private var syncedKey: String? = null
-    private var unlockedUntil = 0L
+    private lateinit var pinPad: PinPad
     private var panelColor: Int? = null
     private var panelColorAnim: ValueAnimator? = null
     private var syncSpin: ObjectAnimator? = null
@@ -177,6 +178,7 @@ class MainActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         prefs = Prefs(this)
         prefs.seedOnce()
+        pinPad = PinPad(this, prefs)
 
         root = findViewById(R.id.root)
         tvEvent = findViewById(R.id.tvEvent)
@@ -213,7 +215,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.eventBox).setOnClickListener {
             withPin { startActivity(Intent(this, EventsActivity::class.java)) }
         }
-        findViewById<View>(R.id.sectorBar).setOnClickListener { withPin { openSectorSheet() } }
+        findViewById<View>(R.id.sectorBar).setOnClickListener { pinPad.require(alwaysAsk = true) { openSectorSheet() } }
         btnSync.setOnClickListener { haptic(it); syncWithServer(manual = true) }
         findViewById<ImageButton>(R.id.btnMenu).setOnClickListener {
             haptic(it)
@@ -383,7 +385,7 @@ class MainActivity : AppCompatActivity() {
         val btnApply = v.findViewById<MaterialButton>(R.id.btnApply)
         v.findViewById<TextView>(R.id.tvSheetSub).text = "${prefs.gate} · ${event.name}"
         v.findViewById<TextView>(R.id.tvPinNote).apply {
-            isVisible = prefs.pin.isNotEmpty()
+            isVisible = true
             val lock = ContextCompat.getDrawable(context, R.drawable.ic_lock)?.mutate()?.apply {
                 setTint(ContextCompat.getColor(context, R.color.text_muted))
                 val s = (16 * resources.displayMetrics.density).toInt()
@@ -594,11 +596,14 @@ class MainActivity : AppCompatActivity() {
             }
             "VOID" -> Kind.VOIDED to panel(Kind.VOIDED, "Entrada negada", "Ingresso cancelado", holder,
                 rows = basicRows, note = "Ingresso cancelado ou estornado.", code = code)
+            "INVALID_QUENTRO_CODE" -> Kind.EXPIRED to panel(Kind.EXPIRED, "Entrada negada", "Código expirado", holder,
+                rows = basicRows,
+                note = "QR vencido (print ou PDF de QR dinâmico) ou inválido. Peça o QR atualizado no app.",
+                code = code)
             "SHOW_NOT_OPEN" -> Kind.ERROR to panel(Kind.ERROR, "Validação fechada", "Show não aberto", holder,
                 rows = basicRows, note = "Validação pausada ou fora do horário.", code = code)
             else -> {
                 val (title, note) = when (r.reason) {
-                    "INVALID_QUENTRO_CODE" -> "Código inválido" to "Assinatura inválida: possível falsificação ou leitura ruim."
                     "INVALID_ACL" -> "Código bloqueado" to "Está em lista negra do show."
                     "DENIED" -> "Acesso negado" to "Negado pelas regras do show."
                     "ACCESS_NOT_FOUND" -> "Não encontrado" to "Ingresso não é deste evento, ainda não sincronizou ou o show dele está pausado."
@@ -750,10 +755,10 @@ class MainActivity : AppCompatActivity() {
         val (toneType, toneMs, pattern) = when (kind) {
             Kind.VALID -> Triple(ToneGenerator.TONE_PROP_ACK, 200, longArrayOf(0, 70))
             Kind.MASTER -> Triple(ToneGenerator.TONE_PROP_BEEP2, 300, longArrayOf(0, 60, 80, 60))
-            Kind.DENIED, Kind.BLOCKED, Kind.USED, Kind.VOIDED -> Triple(ToneGenerator.TONE_SUP_ERROR, 700, longArrayOf(0, 250, 120, 250, 120, 250))
+            Kind.DENIED, Kind.BLOCKED, Kind.USED, Kind.VOIDED, Kind.EXPIRED -> Triple(ToneGenerator.TONE_SUP_ERROR, 700, longArrayOf(0, 250, 120, 250, 120, 250))
             Kind.ERROR -> Triple(ToneGenerator.TONE_SUP_CONGESTION, 900, longArrayOf(0, 600))
         }
-        tone?.startTone(toneType, toneMs)
+        if (kind == Kind.VALID) Beeper.success() else tone?.startTone(toneType, toneMs)
         getSystemService(Vibrator::class.java)?.vibrate(VibrationEffect.createWaveform(pattern, -1))
     }
 
@@ -938,31 +943,8 @@ class MainActivity : AppCompatActivity() {
         else @Suppress("DEPRECATION") super.onBackPressed()
     }
 
-    /** Executa [action] pedindo o PIN do supervisor (se houver). Depois de digitado, vale por 2 min. */
-    private fun withPin(action: () -> Unit) {
-        val pin = prefs.pin
-        if (pin.isEmpty() || SystemClock.elapsedRealtime() < unlockedUntil) {
-            action()
-            return
-        }
-        val input = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-            hint = "PIN"
-        }
-        AlertDialog.Builder(this)
-            .setTitle("PIN do supervisor")
-            .setView(input)
-            .setPositiveButton("Entrar") { _, _ ->
-                if (input.text.toString() == pin) {
-                    unlockedUntil = SystemClock.elapsedRealtime() + 2 * 60 * 1000
-                    action()
-                } else {
-                    showResult(Kind.DENIED, panel(Kind.DENIED, "Acesso restrito", "PIN incorreto", ""), holdMs = 2000)
-                }
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
+    /** Executa [action] após o PIN do administrador (tolerância de 2 min; setores pedem sempre). */
+    private fun withPin(action: () -> Unit) = pinPad.require(onOk = action)
 
     companion object {
         private const val HEARTBEAT_MS = 30_000L
