@@ -45,6 +45,14 @@
             android:text="Modo consulta (/check): só verifica, não marca o ingresso como usado"
             android:textColor="@color/text_primary" />
 
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/swMaxVolume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Volume no máximo durante a leitura"
+            android:textColor="@color/text_primary" />
+
         <TextView
             style="@style/SettingsLabel"
             android:text="PIN do supervisor (opcional): protege eventos, setores e configurações" />

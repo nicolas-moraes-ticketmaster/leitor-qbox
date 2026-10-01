@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<LinearLayout
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -86,13 +91,98 @@
             app:tint="@android:color/white" />
 
         <ImageButton
-            android:id="@+id/btnSettings"
+            android:id="@+id/btnMenu"
             android:layout_width="44dp"
             android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Configurações"
-            android:src="@drawable/ic_settings"
+            android:contentDescription="Menu"
+            android:src="@drawable/ic_menu"
             app:tint="@android:color/white" />
+    </LinearLayout>
+
+    <!-- Faixa: Q-Box fora do ar (verificação a cada 30 s) -->
+    <LinearLayout
+        android:id="@+id/offlineBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/denied"
+        android:gravity="center_vertical"
+        android:minHeight="40dp"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="8dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_warning"
+            app:tint="@android:color/white" />
+
+        <TextView
+            android:id="@+id/tvOffline"
+            style="@style/T.Body"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:text="Q-Box fora do ar"
+            android:textColor="@android:color/white" />
+
+        <TextView
+            android:id="@+id/btnRetry"
+            style="@style/T.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:paddingHorizontal="8dp"
+            android:text="Tentar agora"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+
+    <!-- Faixa: nova versão do app no GitHub -->
+    <LinearLayout
+        android:id="@+id/updateBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/brand_dark"
+        android:gravity="center_vertical"
+        android:minHeight="40dp"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="8dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_download"
+            app:tint="@android:color/white" />
+
+        <TextView
+            android:id="@+id/tvUpdate"
+            style="@style/T.Body"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:textColor="@android:color/white" />
+
+        <TextView
+            android:id="@+id/btnUpdate"
+            style="@style/T.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:paddingHorizontal="8dp"
+            android:text="Atualizar"
+            android:textColor="@android:color/white" />
     </LinearLayout>
 
     <LinearLayout
@@ -326,13 +416,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Histórico: 2 linhas -->
-        <LinearLayout
-            android:id="@+id/historyBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -361,3 +444,69 @@
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
+
+    <!-- Menu lateral (hambúrguer) -->
+    <LinearLayout
+        android:id="@+id/drawerPanel"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="@color/background"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/brand"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                style="@style/T.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.12"
+                android:text="LEITOR QBOX"
+                android:textColor="@android:color/white"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvDrawerEvent"
+                style="@style/T.Title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@android:color/white" />
+
+            <TextView
+                android:id="@+id/tvDrawerSub"
+                style="@style/T.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="#D9FFFFFF" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/drawerItems"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingTop="8dp" />
+
+        <TextView
+            android:id="@+id/tvDrawerVersion"
+            style="@style/T.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:textColor="@color/text_muted" />
+    </LinearLayout>
+</androidx.drawerlayout.widget.DrawerLayout>

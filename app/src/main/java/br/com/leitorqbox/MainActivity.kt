@@ -1,6 +1,7 @@
 package br.com.leitorqbox
 
 import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -20,6 +21,7 @@ import android.os.Vibrator
 import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
@@ -33,12 +35,15 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.animation.PathInterpolatorCompat
+import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import br.com.leitorqbox.QboxClient.ScanResult
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -116,7 +121,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvDenied: TextView
     private lateinit var tvRate: TextView
     private lateinit var tvPct: TextView
-    private lateinit var historyBox: LinearLayout
+    private lateinit var drawer: DrawerLayout
+    private lateinit var drawerItems: LinearLayout
+    private lateinit var btnSync: ImageButton
+    private lateinit var offlineBanner: View
+    private lateinit var tvOffline: TextView
+    private lateinit var updateBanner: View
+    private lateinit var tvUpdate: TextView
 
     private var busy = false
     private var syncing = false
@@ -129,6 +140,10 @@ class MainActivity : AppCompatActivity() {
     // Evento (e conexão) já sincronizado; muda ao trocar de evento ou editar IP/ID/Token.
     private var syncedKey: String? = null
     private var unlockedUntil = 0L
+    private var panelColor: Int? = null
+    private var panelColorAnim: ValueAnimator? = null
+    private var syncSpin: ObjectAnimator? = null
+    private var updateChecked = false
 
     private val handler = Handler(Looper.getMainLooper())
     private val resetToIdle = Runnable { showIdle() }
@@ -136,6 +151,13 @@ class MainActivity : AppCompatActivity() {
         override fun run() {
             updateMetrics()
             handler.postDelayed(this, 10_000)
+        }
+    }
+    // Verifica a cada 30 s se o Q-Box responde; mostra a faixa vermelha se cair.
+    private val heartbeat = object : Runnable {
+        override fun run() {
+            checkServer()
+            handler.postDelayed(this, HEARTBEAT_MS)
         }
     }
     private var tone: ToneGenerator? = null
@@ -180,18 +202,28 @@ class MainActivity : AppCompatActivity() {
         tvDenied = findViewById(R.id.tvDenied)
         tvRate = findViewById(R.id.tvRate)
         tvPct = findViewById(R.id.tvPct)
-        historyBox = findViewById(R.id.historyBox)
+        drawer = findViewById(R.id.drawer)
+        drawerItems = findViewById(R.id.drawerItems)
+        btnSync = findViewById(R.id.btnSync)
+        offlineBanner = findViewById(R.id.offlineBanner)
+        tvOffline = findViewById(R.id.tvOffline)
+        updateBanner = findViewById(R.id.updateBanner)
+        tvUpdate = findViewById(R.id.tvUpdate)
 
         findViewById<View>(R.id.eventBox).setOnClickListener {
             withPin { startActivity(Intent(this, EventsActivity::class.java)) }
         }
         findViewById<View>(R.id.sectorBar).setOnClickListener { withPin { openSectorSheet() } }
-        findViewById<ImageButton>(R.id.btnSync).setOnClickListener { syncWithServer(manual = true) }
-        findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
-            withPin { startActivity(Intent(this, SettingsActivity::class.java)) }
+        btnSync.setOnClickListener { haptic(it); syncWithServer(manual = true) }
+        findViewById<ImageButton>(R.id.btnMenu).setOnClickListener {
+            haptic(it)
+            renderDrawer()
+            drawer.openDrawer(GravityCompat.END)
         }
-        findViewById<MaterialButton>(R.id.btnScan).setOnClickListener { DataWedge.softTrigger(this) }
-        findViewById<MaterialButton>(R.id.btnKeyboard).setOnClickListener { askManualCode() }
+        findViewById<View>(R.id.btnRetry).setOnClickListener { haptic(it); checkServer() }
+        findViewById<View>(R.id.btnUpdate).setOnClickListener { haptic(it); Updater.openDownload(this) }
+        findViewById<MaterialButton>(R.id.btnScan).setOnClickListener { haptic(it); DataWedge.softTrigger(this) }
+        findViewById<MaterialButton>(R.id.btnKeyboard).setOnClickListener { haptic(it); askManualCode() }
 
         tone = runCatching { ToneGenerator(AudioManager.STREAM_MUSIC, 100) }.getOrNull()
         DataWedge.configureProfile(this)
@@ -206,9 +238,12 @@ class MainActivity : AppCompatActivity() {
             IntentFilter(DataWedge.SCAN_ACTION).apply { addCategory(Intent.CATEGORY_DEFAULT) },
             ContextCompat.RECEIVER_EXPORTED, // o broadcast vem do app DataWedge
         )
+        if (prefs.maxVolume) maximizeVolume()
         renderEvent()
         showIdle()
         handler.post(refreshRate)
+        handler.postDelayed(heartbeat, HEARTBEAT_MS)
+        if (!updateChecked) checkForUpdate(manual = false)
         // Sincroniza ao abrir o app e sempre que o evento ativo mudar.
         val active = prefs.activeEvent
         if (active != null && syncKey(active) != syncedKey) syncWithServer(manual = false)
@@ -219,6 +254,7 @@ class MainActivity : AppCompatActivity() {
         unregisterReceiver(scanReceiver)
         handler.removeCallbacks(resetToIdle)
         handler.removeCallbacks(refreshRate)
+        handler.removeCallbacks(heartbeat)
     }
 
     override fun onDestroy() {
@@ -237,6 +273,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (syncing) return
         syncing = true
+        spinSync(true)
         val cfg = prefs.config(event)
         setSyncStatus(null, "Sincronizando…")
         lifecycleScope.launch {
@@ -244,7 +281,9 @@ class MainActivity : AppCompatActivity() {
             val result = withContext(Dispatchers.IO) { runCatching { QboxClient.fetchSectors(cfg) } }
             val ms = SystemClock.elapsedRealtime() - start
             syncing = false
+            spinSync(false)
             result.onSuccess { list ->
+                setOffline(null)
                 syncedKey = syncKey(event)
                 prefs.events.firstOrNull { it.id == event.id }?.let { prefs.upsert(it.withSectors(list)) }
                 renderEvent()
@@ -261,6 +300,7 @@ class MainActivity : AppCompatActivity() {
             }.onFailure {
                 val msg = it.message ?: it.javaClass.simpleName
                 setSyncStatus(false, "Sem conexão com o Q-Box")
+                setOffline("Q-Box fora do ar · ${cfg.baseUrl}")
                 if (manual) {
                     showResult(
                         Kind.ERROR,
@@ -295,6 +335,7 @@ class MainActivity : AppCompatActivity() {
             else -> event.name
         }
         renderSectorBar()
+        renderDrawer()
     }
 
     private fun renderSectorBar() {
@@ -519,6 +560,7 @@ class MainActivity : AppCompatActivity() {
                 showResult(Kind.ERROR, p)
                 record(Kind.ERROR, "Sem conexão", null, listOf(cfg.baseUrl, result.detail), code)
                 setSyncStatus(false, "Sem conexão com o Q-Box")
+                setOffline("Q-Box fora do ar · ${cfg.baseUrl}")
                 // Libera reler o mesmo código logo depois de uma falha de rede.
                 lastCode = null
             }
@@ -581,7 +623,6 @@ class MainActivity : AppCompatActivity() {
         history.addFirst(ReadEntry(now("HH:mm:ss"), kind, title, holder, details, code))
         while (history.size > 30) history.removeLast()
         if (kind != Kind.ERROR) readTimes.addLast(SystemClock.elapsedRealtime())
-        renderHistory()
     }
 
     private fun updateMetrics() {
@@ -592,64 +633,6 @@ class MainActivity : AppCompatActivity() {
         tvRate.text = readTimes.size.toString()
         val total = okCount + deniedCount
         tvPct.text = if (total == 0) "–" else "${okCount * 100 / total}%"
-    }
-
-    private fun renderHistory() {
-        historyBox.removeAllViews()
-        val dp = resources.displayMetrics.density
-        val secondary = ContextCompat.getColor(this, R.color.text_secondary)
-        history.take(2).forEach { entry ->
-            historyBox.addView(LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                minimumHeight = (32 * dp).toInt()
-                setPadding((4 * dp).toInt(), 0, (4 * dp).toInt(), 0)
-                background = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
-                setOnClickListener { showDetails(entry) }
-                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-
-                addView(View(context).apply {
-                    layoutParams = LinearLayout.LayoutParams((6 * dp).toInt(), (6 * dp).toInt()).apply {
-                        marginEnd = (8 * dp).toInt()
-                    }
-                    setBackgroundColor(ContextCompat.getColor(context, entry.kind.bg))
-                })
-                addView(TextView(context).apply {
-                    text = entry.time
-                    textSize = 12f
-                    setTextColor(secondary)
-                    fontFeatureSettings = "tnum"
-                })
-                addView(TextView(context).apply {
-                    text = entry.title
-                    textSize = 12f
-                    setTextColor(Color.WHITE)
-                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                    setPadding((8 * dp).toInt(), 0, (8 * dp).toInt(), 0)
-                })
-                addView(TextView(context).apply {
-                    text = entry.holder.orEmpty()
-                    textSize = 12f
-                    setTextColor(secondary)
-                    maxLines = 1
-                    ellipsize = TextUtils.TruncateAt.END
-                    layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
-                })
-            })
-        }
-    }
-
-    private fun showDetails(e: ReadEntry) {
-        val body = buildString {
-            e.holder?.let { append("Titular: $it\n") }
-            e.details.forEach { append("$it\n") }
-            append("\nHorário: ${e.time}\nCódigo lido:\n${e.code}")
-        }
-        AlertDialog.Builder(this)
-            .setTitle(e.title)
-            .setMessage(body)
-            .setPositiveButton("Fechar", null)
-            .show()
     }
 
     // ---------- Painel ----------
@@ -676,10 +659,7 @@ class MainActivity : AppCompatActivity() {
         val c = { id: Int -> ContextCompat.getColor(this, id) }
         val fg = c(p.fg)
 
-        resultPanel.background = GradientDrawable().apply {
-            setColor(c(p.bg))
-            cornerRadius = 4 * dp
-        }
+        animatePanelColor(c(p.bg))
         listOf(tvEyebrow, tvResultTime, tvResultTitle, tvResultHolder, tvResultNote, tvResultCode)
             .forEach { it.setTextColor(fg) }
 
@@ -733,8 +713,18 @@ class MainActivity : AppCompatActivity() {
     /** Resultado: painel + entrada curta (só alpha) + flash na tela + barra de tempo + som. */
     private fun showResult(kind: Kind, p: Panel, holdMs: Long = 4000) {
         renderPanel(p)
-        resultPanel.alpha = 0.6f
-        resultPanel.animate().alpha(1f).setDuration(150).setInterpolator(standard).start()
+        // Entrada em sequência: ícone, faixa, status, titular, grade e nota (GDS: curto, sem overshoot).
+        ivResultIcon.alpha = 0f
+        ivResultIcon.scaleX = 0.85f; ivResultIcon.scaleY = 0.85f
+        ivResultIcon.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(180).setInterpolator(standard).start()
+        val rise = 10 * resources.displayMetrics.density
+        listOf(accent, tvResultTitle, tvResultHolder, gridRows, tvResultNote).forEachIndexed { i, v ->
+            v.animate().cancel()
+            v.alpha = 0f
+            v.translationY = rise
+            v.animate().alpha(1f).translationY(0f).setStartDelay(i * 40L).setDuration(200)
+                .setInterpolator(standard).start()
+        }
         // Flash da cor na tela inteira, visível de longe.
         flash?.cancel()
         flash = ValueAnimator.ofObject(
@@ -767,6 +757,187 @@ class MainActivity : AppCompatActivity() {
         getSystemService(Vibrator::class.java)?.vibrate(VibrationEffect.createWaveform(pattern, -1))
     }
 
+    /** Transição de cor do painel entre um estado e outro (200 ms). */
+    private fun animatePanelColor(to: Int) {
+        val bg = (resultPanel.background as? GradientDrawable) ?: GradientDrawable().also {
+            it.cornerRadius = 4 * resources.displayMetrics.density
+            resultPanel.background = it
+        }
+        val from = panelColor ?: to
+        panelColor = to
+        panelColorAnim?.cancel()
+        if (from == to) { bg.setColor(to); return }
+        panelColorAnim = ValueAnimator.ofObject(ArgbEvaluator(), from, to).apply {
+            duration = 200
+            interpolator = standard
+            addUpdateListener { bg.setColor(it.animatedValue as Int) }
+            start()
+        }
+    }
+
+    /** Ícone de sincronizar gira enquanto conversa com o Q-Box. */
+    private fun spinSync(on: Boolean) {
+        syncSpin?.cancel()
+        if (on) {
+            syncSpin = ObjectAnimator.ofFloat(btnSync, View.ROTATION, btnSync.rotation, btnSync.rotation + 360f).apply {
+                duration = 800
+                repeatCount = ObjectAnimator.INFINITE
+                interpolator = LinearInterpolator()
+                start()
+            }
+        } else {
+            btnSync.animate().rotation(0f).setDuration(150).setInterpolator(standard).start()
+        }
+    }
+
+    // ---------- Q-Box fora do ar (verificação a cada 30 s) ----------
+
+    private fun checkServer() {
+        val event = prefs.activeEvent ?: return
+        if (!event.isComplete() || busy || syncing) return
+        val url = event.baseUrl()
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) { runCatching { QboxClient.ping(url) } }
+            result.onSuccess { ms ->
+                setOffline(null)
+                setSyncStatus(true, "Conectado · $ms ms")
+            }.onFailure {
+                setOffline("Q-Box fora do ar · $url")
+                setSyncStatus(false, "Sem conexão com o Q-Box")
+            }
+        }
+    }
+
+    /** Mostra (mensagem) ou esconde (null) a faixa vermelha, deslizando. */
+    private fun setOffline(message: String?) {
+        if (message != null) {
+            tvOffline.text = message
+            slideBanner(offlineBanner, show = true)
+        } else {
+            slideBanner(offlineBanner, show = false)
+        }
+    }
+
+    private fun slideBanner(banner: View, show: Boolean) {
+        if (show == banner.isVisible) return
+        banner.animate().cancel()
+        if (show) {
+            banner.isVisible = true
+            banner.alpha = 0f
+            banner.translationY = -12 * resources.displayMetrics.density
+            banner.animate().alpha(1f).translationY(0f).setDuration(200).setInterpolator(standard).start()
+        } else {
+            banner.animate().alpha(0f).setDuration(150).setInterpolator(standard)
+                .withEndAction { banner.isVisible = false }.start()
+        }
+    }
+
+    // ---------- Atualização do app (GitHub) ----------
+
+    private fun checkForUpdate(manual: Boolean) {
+        updateChecked = true
+        lifecycleScope.launch {
+            val release = withContext(Dispatchers.IO) { runCatching { Updater.newerRelease(this@MainActivity) } }
+            val newer = release.getOrNull()
+            when {
+                newer != null -> {
+                    tvUpdate.text = "Nova versão ${newer.name} disponível"
+                    slideBanner(updateBanner, show = true)
+                }
+                manual && release.isFailure ->
+                    Toast.makeText(this@MainActivity, "Não foi possível verificar (sem internet?)", Toast.LENGTH_LONG).show()
+                manual -> Toast.makeText(this@MainActivity, "O app já está na versão mais nova", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // ---------- Menu lateral ----------
+
+    private fun renderDrawer() {
+        val event = prefs.activeEvent
+        findViewById<TextView>(R.id.tvDrawerEvent).text = event?.name ?: "Nenhum evento"
+        findViewById<TextView>(R.id.tvDrawerSub).text =
+            listOfNotNull(prefs.gate, event?.showId, event?.baseUrl()?.ifEmpty { null }).joinToString(" · ")
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull()
+        findViewById<TextView>(R.id.tvDrawerVersion).text = "Versão $version"
+
+        drawerItems.removeAllViews()
+        drawerItem(R.drawable.ic_list, "Eventos", "Trocar o evento em uso") {
+            startActivity(Intent(this, EventsActivity::class.java))
+        }
+        drawerItem(R.drawable.ic_camera, "Cadastrar evento", "Ler o QR: preenche Show ID e Token") {
+            startActivity(Intent(this, EventEditActivity::class.java).putExtra(EventEditActivity.EXTRA_SCAN_NOW, true))
+        }
+        drawerItem(R.drawable.ic_server, "Conexão com o servidor", prefs.hostForNewEvent().ifEmpty { "IP do Q-Box" }) {
+            startActivity(Intent(this, ServerActivity::class.java))
+        }
+        drawerItem(R.drawable.ic_settings, "Configurações do leitor", "Portão, PIN, volume e modo") {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        drawerItem(R.drawable.ic_download, "Verificar atualização", null, needsPin = false) {
+            checkForUpdate(manual = true)
+        }
+    }
+
+    private fun drawerItem(icon: Int, title: String, subtitle: String?, needsPin: Boolean = true, action: () -> Unit) {
+        val dp = resources.displayMetrics.density
+        drawerItems.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = (56 * dp).toInt()
+            setPadding((16 * dp).toInt(), (8 * dp).toInt(), (16 * dp).toInt(), (8 * dp).toInt())
+            background = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+            setOnClickListener {
+                haptic(it)
+                drawer.closeDrawer(GravityCompat.END)
+                if (needsPin) withPin(action) else action()
+            }
+            addView(ImageView(context).apply {
+                setImageResource(icon)
+                setColorFilter(Color.WHITE)
+                layoutParams = LinearLayout.LayoutParams((22 * dp).toInt(), (22 * dp).toInt()).apply {
+                    marginEnd = (16 * dp).toInt()
+                }
+            })
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(TextView(context).apply {
+                    text = title
+                    textSize = 16f
+                    setTextColor(Color.WHITE)
+                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                })
+                subtitle?.let {
+                    addView(TextView(context).apply {
+                        text = it
+                        textSize = 12f
+                        setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                        maxLines = 1
+                        ellipsize = TextUtils.TruncateAt.END
+                    })
+                }
+            })
+        })
+    }
+
+    // ---------- Som / toque ----------
+
+    private fun maximizeVolume() {
+        val audio = getSystemService(AudioManager::class.java) ?: return
+        runCatching {
+            audio.setStreamVolume(AudioManager.STREAM_MUSIC, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
+        }
+    }
+
+    private fun haptic(v: View) {
+        v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+    }
+
+    override fun onBackPressed() {
+        if (drawer.isDrawerOpen(GravityCompat.END)) drawer.closeDrawer(GravityCompat.END)
+        else @Suppress("DEPRECATION") super.onBackPressed()
+    }
+
     /** Executa [action] pedindo o PIN do supervisor (se houver). Depois de digitado, vale por 2 min. */
     private fun withPin(action: () -> Unit) {
         val pin = prefs.pin
@@ -794,6 +965,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val HEARTBEAT_MS = 30_000L
         private val SECTOR_COLORS = listOf(
             Color.parseColor("#026CDF"), Color.parseColor("#7B3FE4"), Color.parseColor("#00838F"),
             Color.parseColor("#AD1457"), Color.parseColor("#EF6C00"), Color.parseColor("#2E7D32"),

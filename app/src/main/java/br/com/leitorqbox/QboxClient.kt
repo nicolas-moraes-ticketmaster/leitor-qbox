@@ -73,6 +73,21 @@ object QboxClient {
         }
     }
 
+    /** Testa se o Q-Box responde no endereço (painel em GET /). Devolve o tempo em ms. */
+    fun ping(baseUrl: String): Long {
+        val start = System.currentTimeMillis()
+        val conn = URL("$baseUrl/").openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = CONNECT_TIMEOUT_MS
+            conn.readTimeout = READ_TIMEOUT_MS
+            val code = conn.responseCode
+            if (code >= 500) throw QboxException("Q-Box respondeu HTTP $code")
+            return System.currentTimeMillis() - start
+        } finally {
+            conn.disconnect()
+        }
+    }
+
     fun scan(cfg: Config, code: String): ScanResult {
         // Só /validate e /check: as variantes *All não existem em todas as versões do Q-Box.
         // "Todos os setores" é resolvido em Prefs.config() mandando todos os IDs do show.

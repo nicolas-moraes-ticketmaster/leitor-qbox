@@ -67,7 +67,7 @@ class EventEditActivity : AppCompatActivity() {
             sectors = e.sectors
         } else {
             // Novo evento: normalmente é o mesmo Q-Box do evento atual.
-            etHost.setText(prefs.activeEvent?.host.orEmpty())
+            etHost.setText(prefs.hostForNewEvent())
         }
         renderSectors()
 

@@ -15,9 +15,20 @@ class Prefs(context: Context) {
     var pin by str("pin")
     var activeEventId by str("active_event")
 
+    /** IP do Q-Box usado como padrão nos eventos novos (menu > Conexão com o servidor). */
+    var defaultHost by str("default_host")
+
     var checkOnly: Boolean
         get() = sp.getBoolean("check_only", false)
         set(value) = sp.edit().putBoolean("check_only", value).apply()
+
+    /** Põe o volume de mídia no máximo ao abrir a tela de leitura. */
+    var maxVolume: Boolean
+        get() = sp.getBoolean("max_volume", true)
+        set(value) = sp.edit().putBoolean("max_volume", value).apply()
+
+    /** IP sugerido para um evento novo: o do servidor configurado ou, se vazio, o do evento ativo. */
+    fun hostForNewEvent() = defaultHost.ifBlank { activeEvent?.host.orEmpty() }
 
     var events: List<Event>
         get() = runCatching { Event.listFromJson(sp.getString("events", "[]") ?: "[]") }.getOrDefault(emptyList())

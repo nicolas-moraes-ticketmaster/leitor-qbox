@@ -16,6 +16,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var etGate: EditText
     private lateinit var etPin: EditText
     private lateinit var swCheckOnly: SwitchCompat
+    private lateinit var swMaxVolume: SwitchCompat
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,15 +24,17 @@ class SettingsActivity : AppCompatActivity() {
         prefs = Prefs(this)
 
         val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull()
-        findViewById<TextView>(R.id.tvTitle).text = "Configurações · v$version"
+        findViewById<TextView>(R.id.tvTitle).text = "Configurações do leitor · v$version"
 
         etGate = findViewById(R.id.etGate)
         etPin = findViewById(R.id.etPin)
         swCheckOnly = findViewById(R.id.swCheckOnly)
+        swMaxVolume = findViewById(R.id.swMaxVolume)
 
         etGate.setText(prefs.gate)
         etPin.setText(prefs.pin)
         swCheckOnly.isChecked = prefs.checkOnly
+        swMaxVolume.isChecked = prefs.maxVolume
 
         findViewById<Button>(R.id.btnEvents).setOnClickListener {
             startActivity(Intent(this, EventsActivity::class.java))
@@ -48,6 +51,7 @@ class SettingsActivity : AppCompatActivity() {
         prefs.gate = gate
         prefs.pin = etPin.text.toString().trim()
         prefs.checkOnly = swCheckOnly.isChecked
+        prefs.maxVolume = swMaxVolume.isChecked
         Toast.makeText(this, "Configuração salva", Toast.LENGTH_SHORT).show()
         finish()
     }
