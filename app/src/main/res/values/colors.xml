@@ -1,20 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Identidade: azul Ticketmaster sobre fundo escuro. -->
-    <color name="brand">#026CDF</color>
-    <color name="brand_dark">#06162E</color>
+    <!-- GDS primárias -->
+    <color name="brand">#024DDF</color>          <!-- neptune -->
+    <color name="brand_dark">#023AA7</color>     <!-- neptune dark (hover/press) -->
+    <color name="brand_darker">#012E86</color>   <!-- status bar -->
 
-    <color name="background">#0A0E14</color>
-    <color name="surface">#121821</color>
-    <color name="card">#1A2230</color>
+    <!-- Superfícies (TM Dark) -->
+    <color name="background">#121212</color>     <!-- cosmos -->
+    <color name="surface">#1E1E1E</color>        <!-- cosmos raised -->
+    <color name="card">#1E1E1E</color>
+    <color name="divider">#2A2A2A</color>
+    <color name="divider_strong">#646464</color> <!-- granite -->
+
     <color name="text_primary">#FFFFFF</color>
-    <color name="text_secondary">#8FA0B5</color>
+    <color name="text_secondary">#BFBFBF</color> <!-- moonrock -->
+    <color name="text_muted">#949494</color>     <!-- slate -->
 
-    <!-- Status do resultado: bem distintos entre si e do azul da marca. -->
-    <color name="idle">#16202E</color>
-    <color name="processing">#1D3A63</color>
-    <color name="valid">#00A651</color>
-    <color name="master">#7B3FE4</color>
-    <color name="denied">#E0262F</color>
-    <color name="warning">#F28C28</color>
+    <!-- Status do resultado: fundo / sub-superfície / texto -->
+    <color name="idle">#1E1E1E</color>
+    <color name="idle_sub">#121212</color>
+    <color name="processing">#024DDF</color>
+    <color name="processing_sub">#023AA7</color>
+    <color name="valid">#048851</color>          <!-- earth -->
+    <color name="valid_sub">#03663D</color>
+    <color name="master">#A733FF</color>         <!-- callisto -->
+    <color name="master_sub">#7D26BF</color>
+    <color name="denied">#EB0000</color>         <!-- mars -->
+    <color name="denied_sub">#B00000</color>
+    <color name="warning">#FFB932</color>        <!-- jupiter: texto escuro -->
+    <color name="warning_sub">#BF8B26</color>
+    <color name="on_warning">#121212</color>
+
+    <color name="overlay">#BF000000</color>      <!-- rgba(0,0,0,.75) -->
 </resources>

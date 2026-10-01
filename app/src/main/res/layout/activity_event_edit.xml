@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
@@ -18,13 +19,15 @@
             android:textSize="22sp"
             android:textStyle="bold" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCamera"
+            style="@style/Btn.Primary"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
+            android:layout_height="48dp"
             android:layout_marginTop="12dp"
-            android:text="📷  Ler QR do evento com a câmera"
-            android:textSize="16sp" />
+            android:text="Ler QR do evento com a câmera"
+            app:icon="@drawable/ic_camera"
+            app:iconGravity="textStart" />
 
         <TextView
             android:layout_width="match_parent"
@@ -74,9 +77,9 @@
             android:fontFamily="monospace"
             android:inputType="textVisiblePassword|textNoSuggestions" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnTest"
-            style="@style/Widget.Material3.Button.TonalButton"
+            style="@style/Btn.Secondary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"

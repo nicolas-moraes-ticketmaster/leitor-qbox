@@ -66,7 +66,7 @@ class EventsActivity : AppCompatActivity() {
                 bottomMargin = (10 * dp).toInt()
             }
             background = GradientDrawable().apply {
-                cornerRadius = 14 * dp
+                cornerRadius = 4 * dp
                 setColor(color(R.color.card))
                 if (active) setStroke((2 * dp).toInt(), color(R.color.valid))
             }
@@ -77,7 +77,7 @@ class EventsActivity : AppCompatActivity() {
             }
 
             addView(TextView(context).apply {
-                text = (if (active) "✓ " else "") + e.name
+                text = if (active) "${e.name} · Em uso" else e.name
                 setTextColor(color(R.color.text_primary))
                 textSize = 17f
                 setTypeface(typeface, Typeface.BOLD)

@@ -1,23 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+        Ticketmaster GDS (TM Dark). Fonte: Averta não está embutida (licença), então usamos
+        sans-serif (Roboto) com a mesma escala. textStyle / sans-serif-medium garantem o peso
+        no Android 8-10, onde textFontWeight é ignorado.
+    -->
     <style name="Theme.LeitorQBOX" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/brand</item>
         <item name="colorOnPrimary">@android:color/white</item>
-        <item name="colorPrimaryContainer">#0B3A75</item>
+        <item name="colorPrimaryContainer">@color/brand_dark</item>
         <item name="colorOnPrimaryContainer">@android:color/white</item>
         <item name="colorSecondaryContainer">@color/card</item>
         <item name="colorOnSecondaryContainer">@android:color/white</item>
-        <item name="colorSurface">@color/surface</item>
-        <item name="android:statusBarColor">@color/background</item>
+        <item name="colorSurface">@color/background</item>
+        <item name="colorOutline">@color/divider_strong</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:letterSpacing">0.02</item>
+        <item name="android:statusBarColor">@color/brand_darker</item>
         <item name="android:navigationBarColor">@color/background</item>
         <item name="android:windowBackground">@color/background</item>
+        <item name="shapeAppearanceSmallComponent">@style/Shape.GDS</item>
+        <item name="shapeAppearanceMediumComponent">@style/Shape.GDS</item>
+        <item name="materialButtonStyle">@style/Btn.Primary</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.GDS.BottomSheet</item>
     </style>
 
-    <!-- Splash de abertura (androidx.core:core-splashscreen, funciona do Android 8 ao 14). -->
     <style name="Theme.LeitorQBOX.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/brand</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="postSplashScreenTheme">@style/Theme.LeitorQBOX</item>
+    </style>
+
+    <!-- Cantos de 4dp em tudo (GDS) -->
+    <style name="Shape.GDS" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">4dp</item>
+    </style>
+
+    <!-- Botões: 44dp, sem caixa alta, sem sombra -->
+    <style name="Btn.Primary" parent="Widget.Material3.Button">
+        <item name="android:minHeight">44dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textFontWeight">600</item>
+        <item name="cornerRadius">4dp</item>
+        <item name="backgroundTint">@color/brand</item>
+    </style>
+    <style name="Btn.Secondary" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:minHeight">44dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textFontWeight">600</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="cornerRadius">4dp</item>
+        <item name="strokeColor">@android:color/white</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="iconTint">@android:color/white</item>
+    </style>
+
+    <!-- BottomSheet: cantos de 4dp no topo, overlay preto 75% -->
+    <style name="ThemeOverlay.GDS.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/GDS.BottomSheet</item>
+        <item name="android:backgroundDimAmount">0.75</item>
+    </style>
+    <style name="GDS.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@color/background</item>
+        <item name="shapeAppearance">@style/Shape.GDS</item>
+    </style>
+
+    <!-- Escala tipográfica (GDS) -->
+    <style name="T.Status"><!-- kilimanjaro -->
+        <item name="android:textSize">24sp</item>
+        <item name="android:lineHeight">26sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textFontWeight">700</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
+    <style name="T.Holder"><!-- fiji -->
+        <item name="android:textSize">18sp</item>
+        <item name="android:lineHeight">24sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+    <style name="T.Title"><!-- cabeçalho / título do sheet -->
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineHeight">22sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+    <style name="T.Body"><!-- nevis -->
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineHeight">18sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+    <style name="T.Caption"><!-- 12sp regular -->
+        <item name="android:textSize">12sp</item>
+        <item name="android:lineHeight">16sp</item>
+        <item name="android:textFontWeight">400</item>
     </style>
 
     <style name="SettingsLabel">
@@ -25,43 +112,39 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">16dp</item>
         <item name="android:textColor">@color/text_secondary</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">12sp</item>
     </style>
-
     <style name="SettingsField">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:singleLine">true</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="android:textColorHint">#5F6B73</item>
+        <item name="android:textColorHint">@color/text_muted</item>
     </style>
 
-    <!-- Bloco de métrica da tela de leitura. -->
-    <style name="MetricTile">
+    <!-- Métrica compacta (valor + rótulo na mesma linha) -->
+    <style name="MetricCell">
         <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_height">match_parent</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:layout_marginHorizontal">3dp</item>
-        <item name="android:background">@drawable/bg_tile</item>
         <item name="android:gravity">center</item>
-        <item name="android:orientation">vertical</item>
-        <item name="android:paddingVertical">8dp</item>
+        <item name="android:orientation">horizontal</item>
     </style>
-
     <style name="MetricValue">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">22sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:textFontWeight">700</item>
+        <item name="android:fontFeatureSettings">tnum</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:text">0</item>
     </style>
-
     <style name="MetricLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textSize">10sp</item>
-        <item name="android:letterSpacing">0.08</item>
+        <item name="android:layout_marginStart">4dp</item>
+        <item name="android:textSize">11sp</item>
         <item name="android:textColor">@color/text_secondary</item>
     </style>
 </resources>

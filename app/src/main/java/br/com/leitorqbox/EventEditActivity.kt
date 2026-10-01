@@ -147,7 +147,7 @@ class EventEditActivity : AppCompatActivity() {
                 sectors = it
                 renderSectors()
                 val kind = if (event.isVirtual) "Evento VIRTUAL" else "Show"
-                showStatus(true, "Conectado em $ms ms! $kind com ${it.size} setor(es).")
+                showStatus(true, "Conectado em $ms ms. $kind com ${it.size} setor(es).")
             }.onFailure {
                 showStatus(false, "Falhou: ${it.message ?: it.javaClass.simpleName}")
             }

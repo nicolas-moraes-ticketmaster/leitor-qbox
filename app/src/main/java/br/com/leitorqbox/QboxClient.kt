@@ -26,6 +26,7 @@ object QboxClient {
         val holder: String?,
         val document: String?,
         val sector: String?,
+        val ticketId: Long? = null,
     )
 
     sealed class ScanResult {
@@ -132,7 +133,8 @@ object QboxClient {
             if (number.isEmpty()) null else "$type $number".trim()
         }
         val sector = ticket.optJSONObject("sector")?.optStringOrNull("name")
-        return TicketInfo(name, document, sector)
+        val ticketId = if (json.has("ticketId") && !json.isNull("ticketId")) json.optLong("ticketId") else null
+        return TicketInfo(name, document, sector, ticketId)
     }
 
     private fun JSONObject.optStringOrNull(key: String): String? =
