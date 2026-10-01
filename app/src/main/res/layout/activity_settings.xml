@@ -63,7 +63,7 @@
             android:id="@+id/etToken"
             style="@style/SettingsField"
             android:fontFamily="monospace"
-            android:inputType="textVisiblePassword|textCapCharacters|textNoSuggestions" />
+            android:inputType="textVisiblePassword|textNoSuggestions" />
 
         <TextView
             style="@style/SettingsLabel"

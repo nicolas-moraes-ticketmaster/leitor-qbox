@@ -95,9 +95,13 @@ class Prefs(context: Context) {
         )
         private const val TEST_DEFAULTS_KEY = "test_defaults_v1"
 
-        // Remove espaços, quebras e caracteres invisíveis que vêm junto ao colar.
-        fun cleanShowId(raw: String) = raw.filter { it.isLetterOrDigit() || it == '-' }
-        fun cleanToken(raw: String) = raw.filter { it.isLetterOrDigit() }
+        // Remove só espaços, quebras e caracteres invisíveis que vêm junto ao colar.
+        // Não mexe no resto: shows virtuais (V-...) têm token próprio, com qualquer caractere e caixa.
+        private fun stripInvisible(raw: String) =
+            raw.filterNot { it.isWhitespace() || Character.getType(it) == Character.FORMAT.toInt() }
+
+        fun cleanShowId(raw: String) = stripInvisible(raw)
+        fun cleanToken(raw: String) = stripInvisible(raw)
 
         /** "192.168.0.50" -> "http://192.168.0.50:8080" (porta padrão do Q-Box). */
         fun normalizeBaseUrl(raw: String): String {

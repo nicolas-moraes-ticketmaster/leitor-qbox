@@ -214,7 +214,7 @@ class MainActivity : AppCompatActivity() {
         "INVALID_ACL" -> "CÓDIGO BLOQUEADO" to "Está em lista negra do show"
         "DENIED" -> "ACESSO NEGADO" to "Negado pelas regras do show"
         "SHOW_NOT_OPEN" -> "SHOW NÃO ABERTO" to "Validação pausada ou fora do horário"
-        "ACCESS_NOT_FOUND" -> "NÃO ENCONTRADO" to "Ingresso não existe no Q-Box (ainda não sincronizado?)"
+        "ACCESS_NOT_FOUND" -> "NÃO ENCONTRADO" to "Ingresso não é deste evento, ainda não sincronizou ou o show dele está pausado"
         else -> "NEGADO" to r.reason
     }
 
