@@ -75,7 +75,7 @@
     </style>
 
     <!-- Escala tipográfica (GDS) -->
-    <style name="T.Status"><!-- kilimanjaro -->
+    <style name="T.Status" parent=""><!-- kilimanjaro -->
         <item name="android:textSize">24sp</item>
         <item name="android:lineHeight">26sp</item>
         <item name="android:textStyle">bold</item>
@@ -83,25 +83,25 @@
         <item name="android:letterSpacing">0.08</item>
         <item name="android:textAllCaps">true</item>
     </style>
-    <style name="T.Holder"><!-- fiji -->
+    <style name="T.Holder" parent=""><!-- fiji -->
         <item name="android:textSize">18sp</item>
         <item name="android:lineHeight">24sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textFontWeight">600</item>
     </style>
-    <style name="T.Title"><!-- cabeçalho / título do sheet -->
+    <style name="T.Title" parent=""><!-- cabeçalho / título do sheet -->
         <item name="android:textSize">16sp</item>
         <item name="android:lineHeight">22sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textFontWeight">600</item>
     </style>
-    <style name="T.Body"><!-- nevis -->
+    <style name="T.Body" parent=""><!-- nevis -->
         <item name="android:textSize">14sp</item>
         <item name="android:lineHeight">18sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textFontWeight">600</item>
     </style>
-    <style name="T.Caption"><!-- 12sp regular -->
+    <style name="T.Caption" parent=""><!-- 12sp regular -->
         <item name="android:textSize">12sp</item>
         <item name="android:lineHeight">16sp</item>
         <item name="android:textFontWeight">400</item>

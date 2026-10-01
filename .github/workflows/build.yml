@@ -24,7 +24,17 @@ jobs:
           gradle-version: "8.7"
 
       - name: Build release APK
-        run: gradle assembleRelease -PversionCode=${{ github.run_number }}
+        run: |
+          set -o pipefail
+          gradle assembleRelease -PversionCode=${{ github.run_number }} 2>&1 | tee build.log
+
+      # Erros de compilação viram anotações (visíveis sem login no GitHub).
+      - name: Report build errors
+        if: failure()
+        run: |
+          grep -E '^e: |error:|ERROR:' build.log | head -30 | while IFS= read -r line; do
+            echo "::error::$line"
+          done
 
       - name: Rename APK
         run: cp app/build/outputs/apk/release/app-release.apk LeitorQBOX.apk
