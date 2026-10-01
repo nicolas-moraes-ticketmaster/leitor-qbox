@@ -48,8 +48,13 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, "Informe o nome deste leitor / portão", Toast.LENGTH_LONG).show()
             return
         }
+        val pin = etPin.text.toString().trim()
+        if (pin.isNotEmpty() && pin.length !in 4..8) {
+            Toast.makeText(this, "O PIN deve ter de 4 a 8 dígitos", Toast.LENGTH_LONG).show()
+            return
+        }
         prefs.gate = gate
-        prefs.pin = etPin.text.toString().trim()
+        prefs.pin = pin
         prefs.checkOnly = swCheckOnly.isChecked
         prefs.maxVolume = swMaxVolume.isChecked
         Toast.makeText(this, "Configuração salva", Toast.LENGTH_SHORT).show()

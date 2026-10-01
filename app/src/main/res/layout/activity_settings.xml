@@ -55,7 +55,7 @@
 
         <TextView
             style="@style/SettingsLabel"
-            android:text="PIN do supervisor (opcional): protege eventos, setores e configurações" />
+            android:text="PIN do administrador (4 a 8 dígitos): protege eventos, setores e configurações" />
 
         <EditText
             android:id="@+id/etPin"

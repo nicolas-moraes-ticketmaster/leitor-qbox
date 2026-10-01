@@ -25,7 +25,7 @@
     <color name="processing_sub">#1E1E1E</color>
     <color name="valid">#048851</color>          <!-- earth -->
     <color name="valid_sub">#03663D</color>
-    <!-- Mestre em teal: roxo agora é "já utilizado" (barrar), não pode parecer com mestre (entrar). -->
+    <!-- Mestre em teal (roxo é "expirado"). -->
     <color name="master">#00838F</color>
     <color name="master_sub">#006169</color>
     <color name="used">#F26B1D</color>           <!-- já utilizado: laranja -->
