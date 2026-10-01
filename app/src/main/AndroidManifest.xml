@@ -13,7 +13,8 @@
     <!-- O Q-Box fala HTTP puro na LAN (porta 8080), por isso cleartext liberado. -->
     <application
         android:allowBackup="false"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/Theme.LeitorQBOX"
         android:usesCleartextTraffic="true">
@@ -21,6 +22,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:theme="@style/Theme.LeitorQBOX.Starting"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="stateHidden|adjustResize">

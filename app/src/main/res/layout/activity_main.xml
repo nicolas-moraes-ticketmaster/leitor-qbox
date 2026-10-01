@@ -1,28 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
     android:orientation="vertical"
     android:padding="12dp">
 
+    <!-- Cabeçalho: marca + evento ativo + ações -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tvEvent"
+        <LinearLayout
+            android:id="@+id/eventBox"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="?attr/selectableItemBackground"
-            android:paddingVertical="6dp"
-            android:textColor="@color/text_primary"
-            android:textSize="19sp"
-            android:textStyle="bold" />
+            android:orientation="vertical"
+            android:paddingVertical="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.18"
+                android:text="LEITOR QBOX · ACCESS CONTROL"
+                android:textColor="@color/brand"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvEvent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/btnSync"
@@ -45,6 +65,8 @@
         android:id="@+id/tvHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
         android:textColor="@color/text_secondary"
         android:textSize="12sp" />
 
@@ -52,14 +74,14 @@
         android:id="@+id/tvSync"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:maxLines="2"
+        android:ellipsize="end"
+        android:maxLines="1"
         android:textSize="12sp" />
 
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
         android:scrollbars="none">
 
         <com.google.android.material.chip.ChipGroup
@@ -75,6 +97,7 @@
         android:layout_height="wrap_content"
         android:textSize="12sp" />
 
+    <!-- Resultado da leitura -->
     <LinearLayout
         android:id="@+id/resultPanel"
         android:layout_width="match_parent"
@@ -86,86 +109,106 @@
         android:padding="16dp">
 
         <TextView
+            android:id="@+id/tvResultIcon"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="52sp"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/tvResultTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:gravity="center"
+            android:letterSpacing="0.04"
             android:textColor="@android:color/white"
-            android:textSize="36sp"
+            android:textSize="32sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvResultDetail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:gravity="center"
             android:textColor="@android:color/white"
-            android:textSize="22sp" />
+            android:textSize="21sp" />
 
         <TextView
             android:id="@+id/tvResultExtra"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:gravity="center"
-            android:textColor="#E0E0E0"
-            android:textSize="15sp" />
+            android:textColor="#E6FFFFFF"
+            android:textSize="14sp" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvCounters"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tvHistory"
+    <!-- Métricas -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:fontFamily="monospace"
-        android:maxLines="5"
-        android:textColor="@color/text_secondary"
-        android:textSize="12sp" />
+        android:layout_marginTop="8dp"
+        android:layout_marginHorizontal="-3dp"
+        android:orientation="horizontal">
+
+        <LinearLayout style="@style/MetricTile">
+            <TextView android:id="@+id/tvOk" style="@style/MetricValue" android:textColor="@color/valid" />
+            <TextView style="@style/MetricLabel" android:text="LIBERADOS" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/MetricTile">
+            <TextView android:id="@+id/tvDenied" style="@style/MetricValue" android:textColor="@color/denied" />
+            <TextView style="@style/MetricLabel" android:text="NEGADOS" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/MetricTile">
+            <TextView android:id="@+id/tvRate" style="@style/MetricValue" />
+            <TextView style="@style/MetricLabel" android:text="POR MIN" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/MetricTile">
+            <TextView android:id="@+id/tvPct" style="@style/MetricValue" android:text="–" />
+            <TextView style="@style/MetricLabel" android:text="APROVAÇÃO" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Histórico (toque para detalhes) -->
+    <LinearLayout
+        android:id="@+id/historyBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="vertical" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="8dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/etManual"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Digitar código manualmente"
-            android:imeOptions="actionSend"
-            android:inputType="text|textNoSuggestions"
-            android:singleLine="true"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_secondary" />
+        <Button
+            android:id="@+id/btnKeyboard"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="64dp"
+            android:layout_height="60dp"
+            android:contentDescription="Digitar código"
+            android:text="⌨"
+            android:textSize="22sp" />
 
         <Button
-            android:id="@+id/btnSend"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:id="@+id/btnScan"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
             android:layout_marginStart="8dp"
-            android:text="Enviar" />
+            android:layout_weight="1"
+            android:letterSpacing="0.1"
+            android:text="LER"
+            android:textSize="20sp"
+            android:textStyle="bold" />
     </LinearLayout>
-
-    <Button
-        android:id="@+id/btnScan"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginTop="6dp"
-        android:text="LER"
-        android:textSize="20sp"
-        android:textStyle="bold" />
 </LinearLayout>

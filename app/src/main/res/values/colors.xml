@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background">#121417</color>
-    <color name="text_primary">#FFFFFF</color>
-    <color name="text_secondary">#9AA7B0</color>
-    <color name="card">#1E2328</color>
+    <!-- Identidade: azul Ticketmaster sobre fundo escuro. -->
+    <color name="brand">#026CDF</color>
+    <color name="brand_dark">#06162E</color>
 
-    <color name="idle">#37474F</color>
-    <color name="processing">#546E7A</color>
-    <color name="valid">#2E7D32</color>
-    <color name="master">#1565C0</color>
-    <color name="denied">#C62828</color>
-    <color name="warning">#E65100</color>
+    <color name="background">#0A0E14</color>
+    <color name="surface">#121821</color>
+    <color name="card">#1A2230</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#8FA0B5</color>
+
+    <!-- Status do resultado: bem distintos entre si e do azul da marca. -->
+    <color name="idle">#16202E</color>
+    <color name="processing">#1D3A63</color>
+    <color name="valid">#00A651</color>
+    <color name="master">#7B3FE4</color>
+    <color name="denied">#E0262F</color>
+    <color name="warning">#F28C28</color>
 </resources>

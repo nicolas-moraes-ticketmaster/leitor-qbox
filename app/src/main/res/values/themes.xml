@@ -1,9 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.LeitorQBOX" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/brand</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">#0B3A75</item>
+        <item name="colorOnPrimaryContainer">@android:color/white</item>
+        <item name="colorSecondaryContainer">@color/card</item>
+        <item name="colorOnSecondaryContainer">@android:color/white</item>
+        <item name="colorSurface">@color/surface</item>
         <item name="android:statusBarColor">@color/background</item>
         <item name="android:navigationBarColor">@color/background</item>
         <item name="android:windowBackground">@color/background</item>
+    </style>
+
+    <!-- Splash de abertura (androidx.core:core-splashscreen, funciona do Android 8 ao 14). -->
+    <style name="Theme.LeitorQBOX.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.LeitorQBOX</item>
     </style>
 
     <style name="SettingsLabel">
@@ -20,5 +34,34 @@
         <item name="android:singleLine">true</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:textColorHint">#5F6B73</item>
+    </style>
+
+    <!-- Bloco de métrica da tela de leitura. -->
+    <style name="MetricTile">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginHorizontal">3dp</item>
+        <item name="android:background">@drawable/bg_tile</item>
+        <item name="android:gravity">center</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingVertical">8dp</item>
+    </style>
+
+    <style name="MetricValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:text">0</item>
+    </style>
+
+    <style name="MetricLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textColor">@color/text_secondary</item>
     </style>
 </resources>

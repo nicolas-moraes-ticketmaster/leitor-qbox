@@ -1,5 +1,7 @@
 package br.com.leitorqbox
 
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -16,7 +18,12 @@ import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.text.InputType
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.WindowManager
+import android.view.animation.OvershootInterpolator
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
@@ -26,6 +33,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import br.com.leitorqbox.QboxClient.ScanResult
 import com.google.android.material.chip.Chip
@@ -39,19 +47,41 @@ import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
+    /** Tipo de resultado: define cor, ícone, som e vibração. */
+    private enum class Kind(val colorRes: Int, val icon: String) {
+        VALID(R.color.valid, "✓"),
+        MASTER(R.color.master, "★"),
+        DENIED(R.color.denied, "✕"),
+        ERROR(R.color.warning, "!"),
+    }
+
+    /** Uma leitura do histórico, com tudo o que aparece no detalhe. */
+    private data class ReadEntry(
+        val time: String,
+        val kind: Kind,
+        val title: String,
+        val holder: String?,
+        val details: List<String>,
+        val code: String,
+    )
+
     private lateinit var prefs: Prefs
+    private lateinit var root: View
     private lateinit var tvEvent: TextView
     private lateinit var tvHeader: TextView
     private lateinit var tvSync: TextView
     private lateinit var chipSectors: ChipGroup
     private lateinit var tvSectorsHint: TextView
     private lateinit var resultPanel: LinearLayout
+    private lateinit var tvResultIcon: TextView
     private lateinit var tvResultTitle: TextView
     private lateinit var tvResultDetail: TextView
     private lateinit var tvResultExtra: TextView
-    private lateinit var tvCounters: TextView
-    private lateinit var tvHistory: TextView
-    private lateinit var etManual: EditText
+    private lateinit var tvOk: TextView
+    private lateinit var tvDenied: TextView
+    private lateinit var tvRate: TextView
+    private lateinit var tvPct: TextView
+    private lateinit var historyBox: LinearLayout
 
     private var busy = false
     private var syncing = false
@@ -59,14 +89,22 @@ class MainActivity : AppCompatActivity() {
     private var lastCodeAt = 0L
     private var okCount = 0
     private var deniedCount = 0
-    private val history = ArrayDeque<String>()
+    private val history = ArrayDeque<ReadEntry>()
+    private val readTimes = ArrayDeque<Long>()
     // Evento (e conexão) já sincronizado; muda ao trocar de evento ou editar IP/ID/Token.
     private var syncedKey: String? = null
     private var unlockedUntil = 0L
 
     private val handler = Handler(Looper.getMainLooper())
     private val resetToIdle = Runnable { showIdle() }
+    private val refreshRate = object : Runnable {
+        override fun run() {
+            updateMetrics()
+            handler.postDelayed(this, 10_000)
+        }
+    }
     private var tone: ToneGenerator? = null
+    private var flash: ValueAnimator? = null
 
     private val scanReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -75,39 +113,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         prefs = Prefs(this)
         prefs.seedOnce()
 
+        root = findViewById(R.id.root)
         tvEvent = findViewById(R.id.tvEvent)
         tvHeader = findViewById(R.id.tvHeader)
         tvSync = findViewById(R.id.tvSync)
         chipSectors = findViewById(R.id.chipSectors)
         tvSectorsHint = findViewById(R.id.tvSectorsHint)
         resultPanel = findViewById(R.id.resultPanel)
+        tvResultIcon = findViewById(R.id.tvResultIcon)
         tvResultTitle = findViewById(R.id.tvResultTitle)
         tvResultDetail = findViewById(R.id.tvResultDetail)
         tvResultExtra = findViewById(R.id.tvResultExtra)
-        tvCounters = findViewById(R.id.tvCounters)
-        tvHistory = findViewById(R.id.tvHistory)
-        etManual = findViewById(R.id.etManual)
+        tvOk = findViewById(R.id.tvOk)
+        tvDenied = findViewById(R.id.tvDenied)
+        tvRate = findViewById(R.id.tvRate)
+        tvPct = findViewById(R.id.tvPct)
+        historyBox = findViewById(R.id.historyBox)
 
-        tvEvent.setOnClickListener { withPin { startActivity(Intent(this, EventsActivity::class.java)) } }
+        findViewById<View>(R.id.eventBox).setOnClickListener {
+            withPin { startActivity(Intent(this, EventsActivity::class.java)) }
+        }
         findViewById<ImageButton>(R.id.btnSync).setOnClickListener { syncWithServer(manual = true) }
         findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
             withPin { startActivity(Intent(this, SettingsActivity::class.java)) }
         }
         findViewById<Button>(R.id.btnScan).setOnClickListener { DataWedge.softTrigger(this) }
-        findViewById<Button>(R.id.btnSend).setOnClickListener { sendManual() }
-        etManual.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEND) { sendManual(); true } else false
-        }
+        findViewById<Button>(R.id.btnKeyboard).setOnClickListener { askManualCode() }
 
         tone = runCatching { ToneGenerator(AudioManager.STREAM_MUSIC, 100) }.getOrNull()
         DataWedge.configureProfile(this)
-        updateCounters()
+        updateMetrics()
     }
 
     override fun onResume() {
@@ -120,6 +162,7 @@ class MainActivity : AppCompatActivity() {
         )
         renderEvent()
         showIdle()
+        handler.post(refreshRate)
         // Sincroniza ao abrir o app e sempre que o evento ativo mudar.
         val active = prefs.activeEvent
         if (active != null && syncKey(active) != syncedKey) syncWithServer(manual = false)
@@ -129,6 +172,7 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         unregisterReceiver(scanReceiver)
         handler.removeCallbacks(resetToIdle)
+        handler.removeCallbacks(refreshRate)
     }
 
     override fun onDestroy() {
@@ -161,8 +205,7 @@ class MainActivity : AppCompatActivity() {
                 renderEvent()
                 setSyncStatus(true, "Conectado · ${list.size} setor(es) · $ms ms · $time")
                 if (manual) {
-                    feedback(ok = true)
-                    showPanel(R.color.valid, "CONECTADO", "Q-Box respondeu em $ms ms", "${list.size} setor(es) carregado(s)")
+                    showResult(Kind.VALID, "CONECTADO", "Q-Box respondeu em $ms ms", "${list.size} setor(es) carregado(s)")
                     handler.removeCallbacks(resetToIdle)
                     handler.postDelayed(resetToIdle, 2500)
                 }
@@ -170,8 +213,7 @@ class MainActivity : AppCompatActivity() {
                 val msg = it.message ?: it.javaClass.simpleName
                 setSyncStatus(false, "Falha na sincronização · $time · ${msg.lineSequence().first()}")
                 if (manual) {
-                    feedback(ok = false)
-                    showPanel(R.color.warning, "SEM SINCRONIZAR", msg.lineSequence().first(), msg.lineSequence().drop(1).joinToString("\n"))
+                    showResult(Kind.ERROR, "SEM SINCRONIZAR", msg.lineSequence().first(), msg.lineSequence().drop(1).joinToString("\n"))
                     handler.removeCallbacks(resetToIdle)
                     handler.postDelayed(resetToIdle, 8000)
                 }
@@ -200,7 +242,7 @@ class MainActivity : AppCompatActivity() {
             tvEvent.text = "Toque para cadastrar um evento ▾"
             tvHeader.text = "${prefs.gate} · $mode"
         } else {
-            val tag = if (event.isVirtual) "  [VIRTUAL]" else ""
+            val tag = if (event.isVirtual) "  · VIRTUAL" else ""
             tvEvent.text = "${event.name}$tag ▾"
             tvHeader.text = "${prefs.gate} · $mode · ${event.showId} · ${event.baseUrl()}"
         }
@@ -211,10 +253,10 @@ class MainActivity : AppCompatActivity() {
         sectors.forEachIndexed { i, s ->
             val on = s.id in selected
             chipSectors.addView(Chip(this).apply {
-                text = s.name
+                text = if (on) "✓ ${s.name}" else s.name
                 isCheckable = false
                 chipBackgroundColor = ColorStateList.valueOf(
-                    if (on) SECTOR_COLORS[i % SECTOR_COLORS.size] else Color.parseColor("#263238")
+                    if (on) SECTOR_COLORS[i % SECTOR_COLORS.size] else ContextCompat.getColor(context, R.color.card)
                 )
                 setTextColor(Color.WHITE)
                 chipStrokeWidth = 0f
@@ -243,12 +285,27 @@ class MainActivity : AppCompatActivity() {
 
     // ---------- Leitura ----------
 
-    private fun sendManual() {
-        val code = etManual.text.toString().trim()
-        if (code.isNotEmpty()) {
-            etManual.setText("")
-            handleCode(code)
+    private fun askManualCode() {
+        val input = EditText(this).apply {
+            hint = "Código do ingresso"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            imeOptions = EditorInfo.IME_ACTION_SEND
+            isSingleLine = true
         }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Digitar código")
+            .setView(input)
+            .setPositiveButton("Validar") { _, _ -> handleCode(input.text.toString().trim()) }
+            .setNegativeButton("Cancelar", null)
+            .create()
+        input.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEND) {
+                dialog.dismiss()
+                handleCode(input.text.toString().trim())
+                true
+            } else false
+        }
+        dialog.show()
     }
 
     private fun handleCode(code: String) {
@@ -265,67 +322,60 @@ class MainActivity : AppCompatActivity() {
 
         busy = true
         handler.removeCallbacks(resetToIdle)
-        showPanel(R.color.processing, "VALIDANDO…", code.take(48), "")
+        showPanel(R.color.processing, "…", "VALIDANDO", code.take(48), "")
 
         val cfg = prefs.config()
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) { QboxClient.scan(cfg, code) }
             busy = false
-            render(result, cfg)
+            render(result, cfg, code)
         }
     }
 
-    private fun render(result: ScanResult, cfg: QboxClient.Config) {
+    private fun render(result: ScanResult, cfg: QboxClient.Config, code: String) {
         when (result) {
             is ScanResult.Valid -> {
+                val kind = if (result.master) Kind.MASTER else Kind.VALID
                 val title = when {
                     result.master -> "CÓDIGO MESTRE"
                     cfg.checkOnly -> "VÁLIDO (consulta)"
                     else -> "LIBERADO"
                 }
-                val color = if (result.master) R.color.master else R.color.valid
-                showPanel(color, title, result.info.holder ?: "", joinInfo(result.info))
+                val info = joinInfo(result.info)
+                showResult(kind, title, result.info.holder ?: "", info)
                 okCount++
-                feedback(ok = true)
-                addHistory("✓ $title", result.info.holder)
+                record(kind, title, result.info.holder, listOfNotNull(result.info.sector, result.info.document), code)
             }
             is ScanResult.Rejected -> {
                 val (title, hint) = describeReason(result)
-                val extra = listOfNotNull(hint, joinInfo(result.info).ifEmpty { null })
-                    .joinToString("\n")
-                val color = if (result.reason == "SHOW_NOT_OPEN") R.color.warning else R.color.denied
-                showPanel(color, title, result.info.holder ?: "", extra)
+                val extra = listOfNotNull(hint, joinInfo(result.info).ifEmpty { null }).joinToString("\n")
+                val kind = if (result.reason == "SHOW_NOT_OPEN") Kind.ERROR else Kind.DENIED
+                showResult(kind, title, result.info.holder ?: "", extra)
                 deniedCount++
-                feedback(ok = false)
-                addHistory("✗ $title", result.info.holder)
+                record(kind, title, result.info.holder, listOfNotNull(hint, result.info.sector, result.info.document, "Motivo: ${result.reason}"), code)
             }
             ScanResult.AuthError -> {
-                showPanel(
-                    R.color.warning, "ERRO DE CONFIGURAÇÃO", "Show ID ou Token recusados pelo Q-Box",
-                    "${cfg.baseUrl}\nShow '${cfg.showId}' · token ${cfg.token.length} caract. …${cfg.token.takeLast(4)}",
-                )
-                feedback(ok = false)
-                addHistory("! AUTENTICAÇÃO", null)
+                val detail = "${cfg.baseUrl}\nShow '${cfg.showId}' · token ${cfg.token.length} caract. …${cfg.token.takeLast(4)}"
+                showResult(Kind.ERROR, "ERRO DE CONFIGURAÇÃO", "Show ID ou Token recusados pelo Q-Box", detail)
+                record(Kind.ERROR, "AUTENTICAÇÃO", null, detail.lines(), code)
             }
             is ScanResult.ServerError -> {
                 if (result.httpCode == 404) {
-                    showPanel(R.color.warning, "NÃO SUPORTADO", "Este Q-Box não tem essa função", if (cfg.checkOnly) "Desligue o modo consulta nas configurações" else "Verifique a versão do Q-Box")
+                    showResult(Kind.ERROR, "NÃO SUPORTADO", "Este Q-Box não tem essa função", if (cfg.checkOnly) "Desligue o modo consulta nas configurações" else "Verifique a versão do Q-Box")
                 } else {
-                    showPanel(R.color.warning, "ERRO NO Q-BOX", "HTTP ${result.httpCode}", "Tente ler novamente em alguns segundos")
+                    showResult(Kind.ERROR, "ERRO NO Q-BOX", "HTTP ${result.httpCode}", "Tente ler novamente em alguns segundos")
                 }
-                feedback(ok = false)
-                addHistory("! ERRO ${result.httpCode}", null)
+                record(Kind.ERROR, "ERRO ${result.httpCode}", null, listOf("HTTP ${result.httpCode}"), code)
             }
             is ScanResult.NetworkError -> {
-                showPanel(R.color.warning, "SEM CONEXÃO", "Não foi possível falar com o Q-Box", "${cfg.baseUrl}\n${result.detail}")
-                feedback(ok = false)
-                addHistory("! SEM CONEXÃO", null)
+                showResult(Kind.ERROR, "SEM CONEXÃO", "Não foi possível falar com o Q-Box", "${cfg.baseUrl}\n${result.detail}")
+                record(Kind.ERROR, "SEM CONEXÃO", null, listOf(cfg.baseUrl, result.detail), code)
                 setSyncStatus(false, "Sem conexão com o Q-Box")
                 // Libera reler o mesmo código logo depois de uma falha de rede.
                 lastCode = null
             }
         }
-        updateCounters()
+        updateMetrics()
         handler.postDelayed(resetToIdle, 4000)
     }
 
@@ -353,47 +403,152 @@ class MainActivity : AppCompatActivity() {
     private fun joinInfo(info: QboxClient.TicketInfo) =
         listOfNotNull(info.sector, info.document).joinToString(" · ")
 
-    // ---------- UI ----------
+    // ---------- Métricas e histórico ----------
 
-    private fun showIdle() {
-        if (!prefs.isConfigured()) {
-            showPanel(R.color.idle, "CADASTRAR EVENTO", "Toque no nome do evento, no topo", "Dá para ler o QR do evento com a câmera")
-        } else {
-            val mode = if (prefs.checkOnly) "Modo CONSULTA (não marca como usado)" else ""
-            showPanel(R.color.idle, "PRONTO", "Aponte e aperte o gatilho", mode)
+    private fun record(kind: Kind, title: String, holder: String?, details: List<String>, code: String) {
+        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        history.addFirst(ReadEntry(time, kind, title, holder, details, code))
+        while (history.size > 30) history.removeLast()
+        if (kind == Kind.VALID || kind == Kind.MASTER || kind == Kind.DENIED) {
+            readTimes.addLast(SystemClock.elapsedRealtime())
+        }
+        renderHistory()
+    }
+
+    private fun updateMetrics() {
+        val now = SystemClock.elapsedRealtime()
+        while (readTimes.isNotEmpty() && now - readTimes.first() > 60_000) readTimes.removeFirst()
+        tvOk.text = okCount.toString()
+        tvDenied.text = deniedCount.toString()
+        tvRate.text = readTimes.size.toString()
+        val total = okCount + deniedCount
+        tvPct.text = if (total == 0) "–" else "${okCount * 100 / total}%"
+    }
+
+    private fun renderHistory() {
+        historyBox.removeAllViews()
+        val dp = resources.displayMetrics.density
+        history.take(4).forEach { entry ->
+            historyBox.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding((8 * dp).toInt(), (5 * dp).toInt(), (8 * dp).toInt(), (5 * dp).toInt())
+                background = ContextCompat.getDrawable(context, android.R.drawable.list_selector_background)
+                setOnClickListener { showDetails(entry) }
+
+                addView(View(context).apply {
+                    layoutParams = LinearLayout.LayoutParams((8 * dp).toInt(), (8 * dp).toInt()).apply {
+                        marginEnd = (10 * dp).toInt()
+                    }
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(ContextCompat.getColor(context, entry.kind.colorRes))
+                    }
+                })
+                addView(TextView(context).apply {
+                    text = listOfNotNull(entry.time, entry.title, entry.holder).joinToString("   ")
+                    setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+                    textSize = 13f
+                    maxLines = 1
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    layoutParams = LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f)
+                })
+                addView(TextView(context).apply {
+                    text = "›"
+                    setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                    textSize = 16f
+                })
+                layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            })
         }
     }
 
-    private fun showPanel(colorRes: Int, title: String, detail: String, extra: String) {
-        resultPanel.background = GradientDrawable().apply {
-            cornerRadius = 20 * resources.displayMetrics.density
-            setColor(ContextCompat.getColor(this@MainActivity, colorRes))
+    private fun showDetails(e: ReadEntry) {
+        val body = buildString {
+            e.holder?.let { append("Titular: $it\n") }
+            e.details.forEach { append("$it\n") }
+            append("\nHorário: ${e.time}\nCódigo lido:\n${e.code}")
         }
+        AlertDialog.Builder(this)
+            .setTitle("${e.kind.icon}  ${e.title}")
+            .setMessage(body)
+            .setPositiveButton("Fechar", null)
+            .show()
+    }
+
+    // ---------- Visual do resultado ----------
+
+    private fun showIdle() {
+        if (!prefs.isConfigured()) {
+            showPanel(R.color.idle, "+", "CADASTRAR EVENTO", "Toque no nome do evento, no topo", "Dá para ler o QR do evento com a câmera")
+        } else {
+            val mode = if (prefs.checkOnly) "Modo CONSULTA (não marca como usado)" else ""
+            showPanel(R.color.idle, "◎", "PRONTO", "Aponte e aperte o gatilho", mode)
+        }
+    }
+
+    /** Resultado de leitura: painel + animação + flash na tela + som + vibração. */
+    private fun showResult(kind: Kind, title: String, detail: String, extra: String) {
+        showPanel(kind.colorRes, kind.icon, title, detail, extra)
+        animateResult(kind)
+        feedback(kind)
+    }
+
+    private fun showPanel(colorRes: Int, icon: String, title: String, detail: String, extra: String) {
+        val color = ContextCompat.getColor(this, colorRes)
+        val dp = resources.displayMetrics.density
+        resultPanel.background = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(color, darken(color)),
+        ).apply { cornerRadius = 24 * dp }
+        tvResultIcon.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.argb(46, 255, 255, 255))
+        }
+        tvResultIcon.text = icon
         tvResultTitle.text = title
         tvResultDetail.text = detail
         tvResultExtra.text = extra
     }
 
-    private fun updateCounters() {
-        tvCounters.text = "Liberados: $okCount    Negados: $deniedCount"
-    }
-
-    private fun addHistory(status: String, holder: String?) {
-        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        history.addFirst(listOfNotNull(time, status, holder).joinToString("  "))
-        while (history.size > 6) history.removeLast()
-        tvHistory.text = history.joinToString("\n")
-    }
-
-    private fun feedback(ok: Boolean) {
-        if (ok) {
-            tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
-        } else {
-            tone?.startTone(ToneGenerator.TONE_SUP_ERROR, 600)
+    private fun animateResult(kind: Kind) {
+        resultPanel.apply {
+            scaleX = 0.94f; scaleY = 0.94f; alpha = 0.5f
+            animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(220)
+                .setInterpolator(OvershootInterpolator(1.6f)).start()
         }
-        val vibrator = getSystemService(Vibrator::class.java) ?: return
-        val pattern = if (ok) longArrayOf(0, 80) else longArrayOf(0, 200, 100, 200, 100, 200)
-        vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        tvResultIcon.apply {
+            scaleX = 0.3f; scaleY = 0.3f
+            animate().scaleX(1f).scaleY(1f).setDuration(320)
+                .setInterpolator(OvershootInterpolator(2.5f)).start()
+        }
+        // Flash da cor do resultado na tela inteira, visível de longe.
+        val from = ContextCompat.getColor(this, kind.colorRes)
+        val to = ContextCompat.getColor(this, R.color.background)
+        flash?.cancel()
+        flash = ValueAnimator.ofObject(ArgbEvaluator(), from, to).apply {
+            duration = 700
+            addUpdateListener { root.setBackgroundColor(it.animatedValue as Int) }
+            start()
+        }
+    }
+
+    private fun darken(color: Int) = Color.rgb(
+        (Color.red(color) * 0.72).toInt(),
+        (Color.green(color) * 0.72).toInt(),
+        (Color.blue(color) * 0.72).toInt(),
+    )
+
+    /** Som e vibração diferentes por resultado, para reconhecer sem olhar a tela. */
+    private fun feedback(kind: Kind) {
+        val (toneType, toneMs, pattern) = when (kind) {
+            Kind.VALID -> Triple(ToneGenerator.TONE_PROP_ACK, 200, longArrayOf(0, 70))
+            Kind.MASTER -> Triple(ToneGenerator.TONE_PROP_BEEP2, 300, longArrayOf(0, 60, 80, 60))
+            Kind.DENIED -> Triple(ToneGenerator.TONE_SUP_ERROR, 700, longArrayOf(0, 250, 120, 250, 120, 250))
+            Kind.ERROR -> Triple(ToneGenerator.TONE_SUP_CONGESTION, 900, longArrayOf(0, 600))
+        }
+        tone?.startTone(toneType, toneMs)
+        getSystemService(Vibrator::class.java)?.vibrate(VibrationEffect.createWaveform(pattern, -1))
     }
 
     /** Executa [action] pedindo o PIN do supervisor (se houver). Depois de digitado, vale por 2 min. */
@@ -415,7 +570,7 @@ class MainActivity : AppCompatActivity() {
                     unlockedUntil = SystemClock.elapsedRealtime() + 2 * 60 * 1000
                     action()
                 } else {
-                    showPanel(R.color.denied, "PIN INCORRETO", "", "")
+                    showResult(Kind.DENIED, "PIN INCORRETO", "", "")
                     handler.postDelayed(resetToIdle, 2000)
                 }
             }
@@ -425,7 +580,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private val SECTOR_COLORS = listOf(
-            Color.parseColor("#1565C0"), Color.parseColor("#6A1B9A"), Color.parseColor("#00838F"),
+            Color.parseColor("#026CDF"), Color.parseColor("#7B3FE4"), Color.parseColor("#00838F"),
             Color.parseColor("#AD1457"), Color.parseColor("#EF6C00"), Color.parseColor("#2E7D32"),
         )
     }
