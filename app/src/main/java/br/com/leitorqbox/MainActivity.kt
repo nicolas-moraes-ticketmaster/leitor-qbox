@@ -43,6 +43,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.animation.PathInterpolatorCompat
 import androidx.core.view.GravityCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
@@ -427,6 +429,15 @@ class MainActivity : AppCompatActivity() {
             })
         }
         refresh()
+
+        // O rodapé do sheet não pode ficar atrás da barra de navegação do Android.
+        val footer = v.findViewById<View>(R.id.sheetFooter)
+        val footerPad = footer.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(footer) { view, insets ->
+            val bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, footerPad + bottom)
+            insets
+        }
 
         // Com muitos setores a lista empurrava o Aplicar para fora da tela:
         // limita a altura da lista e deixa só ela rolar, com o botão sempre visível.
