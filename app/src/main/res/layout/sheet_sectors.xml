@@ -61,6 +61,7 @@
         android:background="@color/divider" />
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/sectorScroll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 

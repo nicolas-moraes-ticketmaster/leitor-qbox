@@ -23,6 +23,7 @@ import android.text.TextUtils
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.View
+import android.view.View.MeasureSpec
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.WindowManager
@@ -426,6 +427,17 @@ class MainActivity : AppCompatActivity() {
             })
         }
         refresh()
+
+        // Com muitos setores a lista empurrava o Aplicar para fora da tela:
+        // limita a altura da lista e deixa só ela rolar, com o botão sempre visível.
+        val scroll = v.findViewById<View>(R.id.sectorScroll)
+        val content = list.parent as View
+        val maxH = (resources.displayMetrics.heightPixels * 0.5f).toInt()
+        content.measure(
+            MeasureSpec.makeMeasureSpec(resources.displayMetrics.widthPixels, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+        )
+        if (content.measuredHeight > maxH) scroll.layoutParams = scroll.layoutParams.apply { height = maxH }
 
         btnApply.setOnClickListener {
             prefs.upsert(event.copy(selectedSectorIds = event.sectors.map { it.id }.filter { it in draft }))
