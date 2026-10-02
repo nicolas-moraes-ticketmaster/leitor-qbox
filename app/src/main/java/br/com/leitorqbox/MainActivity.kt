@@ -379,6 +379,9 @@ class MainActivity : AppCompatActivity() {
         dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         dialog.behavior.skipCollapsed = true
 
+        // acceptAll e a seleção são estados separados: tocar num setor com "todos" ligado
+        // passa a aceitar só aquele setor (antes desmarcava ele e voltava sempre para "todos").
+        var acceptAll = event.selectedSectorIds.isEmpty()
         val draft = event.selectedSectorIds.toMutableSet()
         val swAll = v.findViewById<MaterialSwitch>(R.id.swAll)
         val list = v.findViewById<LinearLayout>(R.id.sectorList)
@@ -398,34 +401,30 @@ class MainActivity : AppCompatActivity() {
         val boxes = mutableListOf<MaterialCheckBox>()
         fun refresh() {
             swAll.setOnCheckedChangeListener(null)
-            swAll.isChecked = draft.isEmpty()
+            swAll.isChecked = acceptAll
             swAll.setOnCheckedChangeListener { _, on ->
-                if (on) draft.clear() else event.sectors.firstOrNull()?.let { draft.add(it.id) }
+                acceptAll = on
+                if (!on) draft.clear() // começa sem nenhum: o operador marca os do portão
                 refresh()
             }
-            // draft vazio = "todos os setores": todas as caixas aparecem marcadas.
-            val allIds = event.sectors.map { it.id }
             boxes.forEachIndexed { i, cb ->
                 val id = event.sectors[i].id
                 cb.setOnCheckedChangeListener(null)
-                cb.isChecked = draft.isEmpty() || id in draft
+                cb.isChecked = acceptAll || id in draft
                 cb.setOnCheckedChangeListener { _, on ->
-                    if (draft.isEmpty()) draft.addAll(allIds) // saindo do modo "todos"
-                    if (on) draft.add(id) else draft.remove(id)
-                    when {
-                        draft.isEmpty() -> {
-                            draft.add(id)
-                            Toast.makeText(this, "Selecione ao menos um setor ou ative Aceitar todos", Toast.LENGTH_SHORT).show()
-                        }
-                        draft.size == allIds.size -> draft.clear() // marcou todos = "todos"
-                    }
+                    if (acceptAll) {
+                        acceptAll = false
+                        draft.clear()
+                        draft.add(id)
+                    } else if (on) draft.add(id) else draft.remove(id)
                     refresh()
                 }
             }
-            btnApply.text = if (draft.isEmpty()) {
-                "Aplicar · todos os setores"
-            } else {
-                "Aplicar · ${draft.size} ${if (draft.size == 1) "setor" else "setores"}"
+            btnApply.isEnabled = acceptAll || draft.isNotEmpty()
+            btnApply.text = when {
+                acceptAll -> "Aplicar · todos os setores"
+                draft.isEmpty() -> "Marque ao menos um setor"
+                else -> "Aplicar · ${draft.size} ${if (draft.size == 1) "setor" else "setores"}"
             }
         }
 
@@ -445,7 +444,8 @@ class MainActivity : AppCompatActivity() {
         refresh()
 
         btnApply.setOnClickListener {
-            prefs.upsert(event.copy(selectedSectorIds = event.sectors.map { it.id }.filter { it in draft }))
+            val ids = if (acceptAll) emptyList() else event.sectors.map { it.id }.filter { it in draft }
+            prefs.upsert(event.copy(selectedSectorIds = ids))
             renderEvent()
             showIdle()
             dialog.dismiss()
