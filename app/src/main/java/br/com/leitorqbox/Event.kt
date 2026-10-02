@@ -13,7 +13,7 @@ data class Event(
     val token: String,
     /** Setores do show como o Q-Box devolve em /sectors (no virtual, os setores virtuais). */
     val sectors: List<QboxClient.Sector> = emptyList(),
-    /** Setores aceitos por este leitor. Vazio = todos os setores do evento. */
+    /** Setores aceitos por este leitor. Vazio = nenhum escolhido (leitura bloqueada). */
     val selectedSectorIds: List<Int> = emptyList(),
 ) {
     val isVirtual get() = showId.startsWith("V-", ignoreCase = true)

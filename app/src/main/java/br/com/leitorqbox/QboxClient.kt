@@ -90,7 +90,7 @@ object QboxClient {
 
     fun scan(cfg: Config, code: String): ScanResult {
         // Só /validate e /check: as variantes *All não existem em todas as versões do Q-Box.
-        // "Todos os setores" é resolvido em Prefs.config() mandando todos os IDs do show.
+        // Vai sempre a lista dos setores marcados no leitor (não existe modo "todos").
         val path = if (cfg.checkOnly) "/api/access/check" else "/api/access/validate"
         val body = JSONObject()
             .put("code", code)

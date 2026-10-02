@@ -58,8 +58,8 @@ class Prefs(context: Context) {
             showId = cleanShowId(e.showId),
             token = cleanToken(e.token),
             gate = gate.trim(),
-            // Nenhum marcado = todos os setores conhecidos do evento.
-            sectorIds = e.selectedSectorIds.ifEmpty { e.sectors.map { it.id } },
+            // Só os setores marcados; sem nenhum marcado a leitura fica bloqueada.
+            sectorIds = e.selectedSectorIds,
             checkOnly = checkOnly,
         )
     }

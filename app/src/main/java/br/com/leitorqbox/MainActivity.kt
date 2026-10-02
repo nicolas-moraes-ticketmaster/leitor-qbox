@@ -50,7 +50,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
-import com.google.android.material.materialswitch.MaterialSwitch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -354,9 +353,8 @@ class MainActivity : AppCompatActivity() {
                 tvSectorCount.isVisible = false
             }
             sel.isEmpty() -> {
-                tvSectorSummary.text = "Todos os setores"
-                tvSectorCount.text = "Todos"
-                tvSectorCount.isVisible = true
+                tvSectorSummary.text = "Toque para escolher os setores"
+                tvSectorCount.isVisible = false
             }
             else -> {
                 tvSectorSummary.text = sectors.filter { it.id in sel }.joinToString(" · ") { it.name }
@@ -379,11 +377,8 @@ class MainActivity : AppCompatActivity() {
         dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         dialog.behavior.skipCollapsed = true
 
-        // acceptAll e a seleção são estados separados: tocar num setor com "todos" ligado
-        // passa a aceitar só aquele setor (antes desmarcava ele e voltava sempre para "todos").
-        var acceptAll = event.selectedSectorIds.isEmpty()
+        // Sem modo "todos": o portão aceita só os setores marcados aqui (ao menos um).
         val draft = event.selectedSectorIds.toMutableSet()
-        val swAll = v.findViewById<MaterialSwitch>(R.id.swAll)
         val list = v.findViewById<LinearLayout>(R.id.sectorList)
         val btnApply = v.findViewById<MaterialButton>(R.id.btnApply)
         v.findViewById<TextView>(R.id.tvSheetSub).text = "${prefs.gate} · ${event.name}"
@@ -400,40 +395,29 @@ class MainActivity : AppCompatActivity() {
 
         val boxes = mutableListOf<MaterialCheckBox>()
         fun refresh() {
-            swAll.setOnCheckedChangeListener(null)
-            swAll.isChecked = acceptAll
-            swAll.setOnCheckedChangeListener { _, on ->
-                acceptAll = on
-                if (!on) draft.clear() // começa sem nenhum: o operador marca os do portão
-                refresh()
-            }
-            boxes.forEachIndexed { i, cb ->
-                val id = event.sectors[i].id
-                cb.setOnCheckedChangeListener(null)
-                cb.isChecked = acceptAll || id in draft
-                cb.setOnCheckedChangeListener { _, on ->
-                    if (acceptAll) {
-                        acceptAll = false
-                        draft.clear()
-                        draft.add(id)
-                    } else if (on) draft.add(id) else draft.remove(id)
-                    refresh()
-                }
-            }
-            btnApply.isEnabled = acceptAll || draft.isNotEmpty()
-            btnApply.text = when {
-                acceptAll -> "Aplicar · todos os setores"
-                draft.isEmpty() -> "Marque ao menos um setor"
-                else -> "Aplicar · ${draft.size} ${if (draft.size == 1) "setor" else "setores"}"
+            boxes.forEachIndexed { i, cb -> cb.isChecked = event.sectors[i].id in draft }
+            btnApply.isEnabled = draft.isNotEmpty()
+            btnApply.text = if (draft.isEmpty()) {
+                "Marque ao menos um setor"
+            } else {
+                "Aplicar · ${draft.size} ${if (draft.size == 1) "setor" else "setores"}"
             }
         }
 
         event.sectors.forEachIndexed { i, s ->
             val row = layoutInflater.inflate(R.layout.item_sector, list, false)
             row.findViewById<View>(R.id.marker).setBackgroundColor(SECTOR_COLORS[i % SECTOR_COLORS.size])
-            val cb = row.findViewById<MaterialCheckBox>(R.id.cb).apply { text = s.name }
+            // A caixa só mostra o estado; o toque é tratado pela linha inteira.
+            val cb = row.findViewById<MaterialCheckBox>(R.id.cb).apply {
+                text = s.name
+                isClickable = false
+                isFocusable = false
+            }
             row.findViewById<TextView>(R.id.tvId).text = "#${s.id}"
-            row.setOnClickListener { cb.toggle() }
+            row.setOnClickListener {
+                if (!draft.remove(s.id)) draft.add(s.id)
+                refresh()
+            }
             boxes += cb
             list.addView(row)
             list.addView(View(this).apply {
@@ -444,8 +428,7 @@ class MainActivity : AppCompatActivity() {
         refresh()
 
         btnApply.setOnClickListener {
-            val ids = if (acceptAll) emptyList() else event.sectors.map { it.id }.filter { it in draft }
-            prefs.upsert(event.copy(selectedSectorIds = ids))
+            prefs.upsert(event.copy(selectedSectorIds = event.sectors.map { it.id }.filter { it in draft }))
             renderEvent()
             showIdle()
             dialog.dismiss()
@@ -482,6 +465,11 @@ class MainActivity : AppCompatActivity() {
         if (code.isEmpty() || busy) return
         if (!prefs.isConfigured()) {
             showIdle()
+            return
+        }
+        if (prefs.activeEvent?.selectedSectorIds.isNullOrEmpty()) {
+            showResult(Kind.ERROR, panel(Kind.ERROR, "Leitura bloqueada", "Escolha os setores", "",
+                note = "Toque na barra de setores e marque os setores deste portão.", code = code.take(48)))
             return
         }
         // Evita dupla leitura acidental do mesmo QR.
@@ -660,6 +648,12 @@ class MainActivity : AppCompatActivity() {
             renderPanel(Panel(R.color.idle, R.color.idle_sub, R.color.text_primary, null,
                 bigIcon = R.drawable.ic_qr, eyebrow = "Nenhum evento", time = "",
                 title = "Cadastrar evento", holder = "Toque no nome do evento, no topo"))
+            return
+        }
+        if (prefs.activeEvent?.selectedSectorIds.isNullOrEmpty()) {
+            renderPanel(Panel(R.color.idle, R.color.idle_sub, R.color.text_primary, null,
+                bigIcon = R.drawable.ic_qr, eyebrow = "Setores não escolhidos", time = "",
+                title = "Escolha os setores", holder = "Toque na barra de setores, no topo"))
             return
         }
         val mode = if (prefs.checkOnly) "Consulta" else "Validação"

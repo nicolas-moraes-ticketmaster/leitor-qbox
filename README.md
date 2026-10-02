@@ -42,7 +42,7 @@ Toque na engrenagem e preencha:
 | Token | token do show (painel do Q-Box, botão **ID e token**) |
 | Nome do leitor | `Portão Norte - TC22 01`. Vai no campo `gate` e aparece no log |
 
-Toque em **Testar conexão e carregar setores**. Se aparecer "Conectado!", marque os setores daquele portão (nenhum marcado = aceita todos, via `/validateAll`) e salve.
+Toque em **Testar conexão e carregar setores**. Se aparecer "Conectado!", marque os setores daquele portão na barra de setores da tela de leitura. Não existe modo "todos": sem setor marcado, a leitura fica bloqueada.
 
 Opcional: **Modo consulta** usa `/check` e não marca o ingresso como usado. **PIN** impede que o operador mude a configuração.
 

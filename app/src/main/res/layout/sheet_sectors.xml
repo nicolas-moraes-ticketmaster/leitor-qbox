@@ -70,22 +70,13 @@
             android:orientation="vertical"
             android:paddingHorizontal="16dp">
 
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/swAll"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:minHeight="44dp"
-                android:text="Aceitar todos os setores"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp" />
-
             <TextView
                 style="@style/T.Caption"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingTop="12dp"
                 android:paddingBottom="12dp"
-                android:text="Valida qualquer setor do evento."
+                android:text="Marque os setores que este portão aceita. Ingressos de outros setores serão negados."
                 android:textColor="@color/text_secondary" />
 
             <View
